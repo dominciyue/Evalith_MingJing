@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Caches / tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local data (eval runs, sqlite)
+*.sqlite
+*.db
+
+# JS UI (Phase 2)
+node_modules/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
