@@ -6,7 +6,7 @@
 
 **Architecture:** A small library + CLI. A pluggable **Provider** layer (国产 + 海外 models via LiteLLM, plus offline `echo`/`fake` providers for tests) feeds an **Engine** that runs each `TestCase` through configurable **Scorers** (rule-based + LLM-as-judge) into a `Run`. A file-based **RunStore** persists runs as JSON; a pure-function **Diff** compares two runs. A Typer **CLI** wires `run` / `diff` / `list`. Every unit has one responsibility and is tested in isolation with no network.
 
-**Tech Stack:** Python ≥3.11, pydantic v2 (models), PyYAML (config/datasets), LiteLLM (model access), Typer + Rich (CLI), pytest (tests), Ruff (lint). Build via Hatchling, src layout.
+**Tech Stack:** Python ≥3.10, pydantic v2 (models), PyYAML (config/datasets), Typer (CLI), pytest (tests). LiteLLM is an **optional extra** (real model access); local dev/tests need **no network** (pydantic/pyyaml/typer/pytest are already present; `pythonpath=["src"]` avoids an editable install). Build via Hatchling, src layout.
 
 ---
 
@@ -80,17 +80,16 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'mingjing'`
 name = "mingjing"
 version = "0.1.0"
 description = "Neutral AI regression-testing tool (明镜 / Evalith)"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.6",
     "pyyaml>=6.0",
     "typer>=0.12",
-    "rich>=13.7",
-    "litellm>=1.40",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.5"]
+dev = ["pytest>=8.0"]
+litellm = ["litellm>=1.40"]   # real model access; NOT needed for tests (echo/fake providers)
 
 [project.scripts]
 mingjing = "mingjing.cli:main"
@@ -104,6 +103,7 @@ packages = ["src/mingjing"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 ```
 
 ```python
@@ -111,15 +111,18 @@ testpaths = ["tests"]
 __version__ = "0.1.0"
 ```
 
-- [ ] **Step 4: Install and run the test to verify it passes**
+- [ ] **Step 4: Run the test to verify it passes**
 
-Run:
+This repo's Python (3.10) already has `pydantic`, `pyyaml`, `typer`, and `pytest`, and
+`pyproject.toml` sets `pythonpath = ["src"]`, so tests run with **no install and no
+network**. From the repo root:
 ```bash
-python -m venv .venv && . .venv/bin/activate
-pip install -e ".[dev]"
 pytest tests/test_smoke.py -q
 ```
 Expected: PASS (1 passed)
+
+(Real model access via LiteLLM is an optional extra installed later with network:
+`pip install -e ".[litellm]"`. It is not needed for any test.)
 
 - [ ] **Step 5: Commit**
 
@@ -1246,8 +1249,6 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'mingjing.cli'`
 from __future__ import annotations
 
 import typer
-from rich.console import Console
-from rich.table import Table
 
 from .config import load_config
 from .diff import diff_runs
@@ -1256,15 +1257,6 @@ from .providers import get_provider
 from .store import RunStore
 
 app = typer.Typer(help="明镜 / Evalith — AI regression testing")
-console = Console()
-
-_STATUS_COLOR = {
-    "improved": "green",
-    "regressed": "red",
-    "unchanged": "dim",
-    "new": "cyan",
-    "removed": "yellow",
-}
 
 
 @app.command()
@@ -1275,7 +1267,7 @@ def run(config: str, store: str = ".mingjing") -> None:
     path = RunStore(store).save(result)
     passed = sum(1 for r in result.results for s in r.scores if s.passed)
     total = sum(len(r.scores) for r in result.results)
-    console.print(f"[green]Run {result.id}[/] saved to {path} — {passed}/{total} checks passed")
+    typer.echo(f"Run {result.id} saved to {path} — {passed}/{total} checks passed")
 
 
 @app.command()
@@ -1283,26 +1275,19 @@ def diff(before: str, after: str, store: str = ".mingjing") -> None:
     """Compare two runs and show which cases improved or regressed."""
     s = RunStore(store)
     report = diff_runs(s.load(before), s.load(after))
-    table = Table(title=f"Diff {before} → {after}")
-    for col in ("case", "status", "before", "after"):
-        table.add_column(col)
+    typer.echo(f"Diff {before} -> {after}")
     for c in report.cases:
-        color = _STATUS_COLOR[c.status]
-        table.add_row(
-            c.case_id,
-            f"[{color}]{c.status}[/]",
-            "-" if c.before is None else f"{c.before:.2f}",
-            "-" if c.after is None else f"{c.after:.2f}",
-        )
-    console.print(table)
-    console.print(report.summary())
+        before_s = "-" if c.before is None else f"{c.before:.2f}"
+        after_s = "-" if c.after is None else f"{c.after:.2f}"
+        typer.echo(f"  {c.case_id:<16} {c.status:<10} {before_s:>6} -> {after_s:>6}")
+    typer.echo(str(report.summary()))
 
 
 @app.command("list")
 def list_runs(store: str = ".mingjing") -> None:
     """List stored runs, newest first."""
     for r in RunStore(store).list_runs():
-        console.print(f"{r.id}  {r.created_at:%Y-%m-%d %H:%M}  {r.name}  ({r.model})")
+        typer.echo(f"{r.id}  {r.created_at:%Y-%m-%d %H:%M}  {r.name}  ({r.model})")
 
 
 def main() -> None:
@@ -1373,7 +1358,8 @@ against any model (DeepSeek / Qwen / OpenAI / Claude / …), score each case, an
 ## Install
 
 ```bash
-pip install -e ".[dev]"   # from source (v0.1)
+pip install -e .            # core: pydantic, pyyaml, typer (Python >=3.10)
+pip install -e ".[litellm]" # optional: real models (DeepSeek/Qwen/OpenAI/Claude/...)
 ```
 
 ## Quickstart
