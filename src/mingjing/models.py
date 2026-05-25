@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class TestCase(BaseModel):
+    __test__ = False  # tell pytest this pydantic model is not a test class
     id: str
     input: str
     expected: str | None = None

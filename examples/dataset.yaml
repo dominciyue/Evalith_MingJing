@@ -1,8 +1,11 @@
-name: faq-demo
+name: echo-demo
+# Offline demo: the `echo` model returns the prompt unchanged, so each `input`
+# already contains its `expected` substring and the checks pass. Swap in a real
+# model (see README) to evaluate genuine answers.
 cases:
   - id: "1"
-    input: "What is your refund window?"
+    input: "Our refund window is 30 days."
     expected: "30 days"
   - id: "2"
-    input: "Do you ship internationally?"
-    expected: "yes"
+    input: "Yes, we ship internationally."
+    expected: "Yes"
