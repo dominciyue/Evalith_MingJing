@@ -1,0 +1,8 @@
+name: faq-demo
+cases:
+  - id: "1"
+    input: "What is your refund window?"
+    expected: "30 days"
+  - id: "2"
+    input: "Do you ship internationally?"
+    expected: "yes"

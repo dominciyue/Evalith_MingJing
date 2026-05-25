@@ -1,0 +1,8 @@
+name: faq-demo-eval
+dataset: examples/dataset.yaml
+model: echo            # swap for e.g. deepseek/deepseek-chat or gpt-4o-mini
+prompt_template: |
+  Answer the customer question concisely.
+  Question: {{input}}
+scorers:
+  - type: contains     # checks the model output contains each case's `expected`
