@@ -133,9 +133,9 @@ API key。`llm_judge` 评分器可用 `params: {language: zh}` 进行中文评�
 
 ## 状态
 
-v0.2 —— 单轮 prompt 评测、基于文件的运行存储、运行间 diff、CI 设卡
-(`--fail-under`、`--fail-on-regression`、GitHub Action)、Markdown/HTML 报告、
-并发、成本/token/延迟统计,以及带中文评审的国产模型别名。团队/云端能力在路线图上。
+v0.3 —— 单轮 prompt 评测、基于文件的运行存储、带逐用例输出对比的运行间 diff、CI 设卡
+(`--fail-under`、`--fail-on-regression`、文件基线、GitHub Action)、Markdown/HTML 报告、
+带逐用例容错的并发、成本/token/延迟统计,以及带中文评审的国产模型别名。团队/云端能力在路线图上。
 欢迎提 Issue 和 PR。
 
 ## 许可证

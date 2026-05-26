@@ -137,10 +137,11 @@ every case's output, scores, tokens, cost, and latency — to `.evalith/runs/`.
 
 ## Status
 
-v0.2 — single-turn prompt evaluation, file-based run store, run-to-run diff,
-CI gating (`--fail-under`, `--fail-on-regression`, GitHub Action), Markdown/HTML
-reports, concurrency, cost/token/latency tracking, and 国产 model aliases with a
-Chinese judge. Team/cloud features are on the roadmap. Issues and PRs welcome.
+v0.3 — single-turn prompt evaluation, file-based run store, run-to-run diff with
+per-case output comparison, CI gating (`--fail-under`, `--fail-on-regression`,
+file-based baselines, GitHub Action), Markdown/HTML reports, concurrency with
+per-case error isolation, cost/token/latency tracking, and 国产 model aliases
+with a Chinese judge. Team/cloud features are on the roadmap. Issues and PRs welcome.
 
 ## License
 
