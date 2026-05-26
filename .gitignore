@@ -19,6 +19,7 @@ env/
 htmlcov/
 
 # Local data (eval runs, sqlite)
+.mingjing/
 *.sqlite
 *.db
 

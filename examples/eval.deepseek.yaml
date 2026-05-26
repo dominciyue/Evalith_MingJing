@@ -1,0 +1,10 @@
+name: deepseek-smoke
+dataset: examples/qa.yaml
+model: deepseek/deepseek-chat   # needs: export DEEPSEEK_API_KEY=... and pip install -e ".[litellm]"
+prompt_template: "{{input}}"
+temperature: 0.0
+scorers:
+  - type: contains          # output contains each case's `expected`
+  - type: llm_judge         # second pass: an LLM grades the answer against criteria
+    params:
+      criteria: "回答是否准确、直接地回应了问题"

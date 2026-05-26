@@ -1,0 +1,14 @@
+name: qa-smoke
+# A small real-model smoke test: factual questions whose answers are easy to
+# verify with `contains`. Each `input` constrains the answer so a correct model
+# reply reliably includes the `expected` substring.
+cases:
+  - id: capital-cn
+    input: "中国的首都是哪座城市?只回答城市名称,不要其它内容。"
+    expected: "北京"
+  - id: arithmetic
+    input: "请计算 25 + 17,只输出最终的数字结果。"
+    expected: "42"
+  - id: sunrise
+    input: "太阳从哪个方向升起?用一个字回答:东、南、西、北。"
+    expected: "东"
