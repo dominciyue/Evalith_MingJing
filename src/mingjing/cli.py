@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import typer
 
 from .config import load_config
@@ -50,6 +52,22 @@ def list_runs(store: str = ".mingjing") -> None:
     """List stored runs, newest first."""
     for r in RunStore(store).list_runs():
         typer.echo(f"{r.id}  {r.created_at:%Y-%m-%d %H:%M}  {r.name}  ({r.model})")
+
+
+@app.command()
+def report(run_id: str, store: str = ".mingjing",
+           fmt: str = typer.Option("md", "--format", help="md or html"),
+           output: str = typer.Option(None, "--output",
+               help="write to file instead of stdout")) -> None:
+    """Render a saved run as a shareable Markdown/HTML report."""
+    from .report import run_to_html, run_to_markdown
+    run = RunStore(store).load(run_id)
+    text = run_to_html(run) if fmt == "html" else run_to_markdown(run)
+    if output:
+        Path(output).write_text(text, encoding="utf-8")
+        typer.echo(f"Wrote {fmt} report to {output}")
+    else:
+        typer.echo(text)
 
 
 def main() -> None:
