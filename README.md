@@ -26,9 +26,11 @@ prompt or model change can't silently break your product.
 Requires Python ≥ 3.10.
 
 ```bash
-pip install -e .            # core: pydantic, pyyaml, typer (no network needed)
-pip install -e ".[litellm]" # optional: real models (DeepSeek/Qwen/OpenAI/Claude/...)
+pip install evalith              # core: pydantic, pyyaml, typer
+pip install "evalith[litellm]"   # optional: real models (DeepSeek/Qwen/OpenAI/Claude/...)
 ```
+
+Or from source: `git clone https://github.com/dominciyue/Evalith_MingJing` then `pip install -e ".[litellm]"`.
 
 ## Quickstart (offline, no API key)
 

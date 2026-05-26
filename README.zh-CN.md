@@ -25,9 +25,11 @@
 需要 Python ≥ 3.10。
 
 ```bash
-pip install -e .            # 核心依赖:pydantic、pyyaml、typer(无需联网)
-pip install -e ".[litellm]" # 可选:接入真实模型(DeepSeek/Qwen/OpenAI/Claude/...)
+pip install evalith              # 核心依赖:pydantic、pyyaml、typer
+pip install "evalith[litellm]"   # 可选:接入真实模型(DeepSeek/Qwen/OpenAI/Claude/...)
 ```
+
+或从源码安装:`git clone https://github.com/dominciyue/Evalith_MingJing` 后 `pip install -e ".[litellm]"`。
 
 ## 快速开始(离线,无需 API key)
 
