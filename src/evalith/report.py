@@ -81,6 +81,15 @@ def diff_to_markdown(report: DiffReport, before_id: str, after_id: str) -> str:
         b = "—" if c.before is None else f"{c.before:.2f}"
         a = "—" if c.after is None else f"{c.after:.2f}"
         lines.append(f"| {_md(c.case_id)} | {_md(c.status)} | {b} | {a} |")
+    if report.regressed:
+        lines += ["", "## Regressed case outputs", ""]
+        for c in report.regressed:
+            lines += [
+                f"### `{c.case_id}`  ({c.before:.2f} → {c.after:.2f})",
+                f"- **before:** {_truncate(c.before_output or '', 200)}",
+                f"- **after:** {_truncate(c.after_output or '', 200)}",
+                "",
+            ]
     return "\n".join(lines) + "\n"
 
 
@@ -93,8 +102,16 @@ def diff_to_html(report: DiffReport, before_id: str, after_id: str) -> str:
         rows += (f"<tr class='{cls}'><td>{escape(c.case_id)}</td><td>{escape(c.status)}</td>"
                  f"<td>{b}</td><td>{a}</td></tr>")
     summary = " · ".join(f"{k}: {v}" for k, v in report.summary().items())
+    detail = ""
+    if report.regressed:
+        items = ""
+        for c in report.regressed:
+            items += (f"<h3>{escape(c.case_id)} <small>({c.before:.2f} → {c.after:.2f})</small></h3>"
+                      f"<p><b>before:</b> {escape(_truncate(c.before_output or '', 300))}</p>"
+                      f"<p><b>after:</b> {escape(_truncate(c.after_output or '', 300))}</p>")
+        detail = f"<h2>Regressed case outputs</h2>{items}"
     body = (f"<h1>Diff {escape(before_id)} → {escape(after_id)}</h1>"
             f"<p class='meta'>{escape(summary)}</p>"
             f"<table><tr><th>case</th><th>status</th><th>before</th><th>after</th></tr>"
-            f"{rows}</table>")
+            f"{rows}</table>{detail}")
     return _HTML_SHELL.format(title=f"Diff {escape(before_id)}→{escape(after_id)}", body=body)

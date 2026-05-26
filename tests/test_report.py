@@ -46,6 +46,29 @@ def test_diff_to_markdown():
     assert "| 1 |" in md
 
 
+def _diff_pair(before_out, after_out):
+    from evalith.diff import diff_runs
+
+    def mk(rid, out, val):
+        return Run(id=rid, name="d", created_at=datetime(2026, 5, 27, tzinfo=timezone.utc),
+                   model="m", results=[CaseResult(case_id="c1", input="q", output=out,
+                                                  scores=[Score(scorer="s", value=val,
+                                                                passed=val >= 0.5)])])
+    return diff_runs(mk("a", before_out, 1.0), mk("b", after_out, 0.0))
+
+
+def test_diff_markdown_shows_regressed_outputs():
+    from evalith.report import diff_to_markdown
+    md = diff_to_markdown(_diff_pair("GOODOUT", "BADOUT"), "a", "b")
+    assert "GOODOUT" in md and "BADOUT" in md   # before & after outputs shown for the regression
+
+
+def test_diff_html_shows_regressed_outputs():
+    from evalith.report import diff_to_html
+    html = diff_to_html(_diff_pair("GOODOUT", "BADOUT"), "a", "b")
+    assert "GOODOUT" in html and "BADOUT" in html
+
+
 def test_markdown_escapes_pipes_in_output():
     from evalith.report import run_to_markdown
     run = Run(id="z", name="n", created_at=datetime(2026, 5, 26, tzinfo=timezone.utc), model="m",

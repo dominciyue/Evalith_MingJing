@@ -31,3 +31,15 @@ def test_diff_detects_regression():
     assert [c.case_id for c in report.regressed] == ["1"]
     assert report.regressed[0].before == 1.0
     assert report.regressed[0].after == 0.0
+
+
+def test_diff_carries_before_after_output():
+    def mk(rid, out, val):
+        return Run(id=rid, name="t", created_at=datetime(2026, 5, 27, tzinfo=timezone.utc),
+                   model="m", results=[CaseResult(case_id="1", input="q", output=out,
+                                                   scores=[Score(scorer="s", value=val,
+                                                                 passed=val >= 0.5)])])
+    report = diff_runs(mk("a", "four", 1.0), mk("b", "five", 0.0))
+    c = report.regressed[0]
+    assert c.before_output == "four"
+    assert c.after_output == "five"
