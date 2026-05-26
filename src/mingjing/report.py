@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .diff import DiffReport
 from .models import Run
 
 
@@ -31,3 +32,25 @@ def run_to_markdown(run: Run) -> str:
 def run_to_html(run: Run) -> str:  # fleshed out in Task 7
     return (f"<!doctype html><meta charset='utf-8'><title>Run {run.id}</title>"
             f"<pre>{run_to_markdown(run)}</pre>")
+
+
+def diff_to_markdown(report: DiffReport, before_id: str, after_id: str) -> str:
+    s = report.summary()
+    lines = [
+        f"# Diff {before_id} → {after_id}",
+        "",
+        "  ·  ".join(f"**{k}:** {v}" for k, v in s.items()),
+        "",
+        "| case | status | before | after |",
+        "| --- | --- | --- | --- |",
+    ]
+    for c in report.cases:
+        b = "—" if c.before is None else f"{c.before:.2f}"
+        a = "—" if c.after is None else f"{c.after:.2f}"
+        lines.append(f"| {c.case_id} | {c.status} | {b} | {a} |")
+    return "\n".join(lines) + "\n"
+
+
+def diff_to_html(report: DiffReport, before_id: str, after_id: str) -> str:  # fleshed out in Task 7
+    return (f"<!doctype html><meta charset='utf-8'><title>Diff {before_id}→{after_id}</title>"
+            f"<pre>{diff_to_markdown(report, before_id, after_id)}</pre>")

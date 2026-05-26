@@ -31,3 +31,16 @@ def test_cli_report_markdown(tmp_path):
     res = runner.invoke(app, ["report", "abc123", "--store", store])
     assert res.exit_code == 0
     assert "# Run abc123" in res.stdout
+
+
+def test_diff_to_markdown():
+    from mingjing.diff import diff_runs
+    from mingjing.report import diff_to_markdown
+    a = _run()
+    b = Run(id="def456", name="demo", created_at=a.created_at, model=a.model,
+            results=[CaseResult(case_id="1", input="2+2?", output="5",
+                                scores=[Score(scorer="contains", value=0.0, passed=False)])])
+    md = diff_to_markdown(diff_runs(a, b), "abc123", "def456")
+    assert "abc123" in md and "def456" in md
+    assert "regressed" in md
+    assert "| 1 |" in md

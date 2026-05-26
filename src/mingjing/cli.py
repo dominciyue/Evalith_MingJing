@@ -32,16 +32,28 @@ def run(config: str, store: str = ".mingjing",
 @app.command()
 def diff(before: str, after: str, store: str = ".mingjing",
          fail_on_regression: bool = typer.Option(False, "--fail-on-regression",
-             help="Exit 1 if any case regressed.")) -> None:
+             help="Exit 1 if any case regressed."),
+         fmt: str = typer.Option("text", "--format", help="text, md, or html"),
+         output: str = typer.Option(None, "--output", help="write report to file")) -> None:
     """Compare two runs and show which cases improved or regressed."""
     s = RunStore(store)
     report = diff_runs(s.load(before), s.load(after))
-    typer.echo(f"Diff {before} -> {after}")
-    for c in report.cases:
-        before_s = "-" if c.before is None else f"{c.before:.2f}"
-        after_s = "-" if c.after is None else f"{c.after:.2f}"
-        typer.echo(f"  {c.case_id:<16} {c.status:<10} {before_s:>6} -> {after_s:>6}")
-    typer.echo(str(report.summary()))
+    if fmt in {"md", "html"}:
+        from .report import diff_to_html, diff_to_markdown
+        text = (diff_to_html(report, before, after) if fmt == "html"
+                else diff_to_markdown(report, before, after))
+        if output:
+            Path(output).write_text(text, encoding="utf-8")
+            typer.echo(f"Wrote {fmt} diff to {output}")
+        else:
+            typer.echo(text)
+    else:
+        typer.echo(f"Diff {before} -> {after}")
+        for c in report.cases:
+            before_s = "-" if c.before is None else f"{c.before:.2f}"
+            after_s = "-" if c.after is None else f"{c.after:.2f}"
+            typer.echo(f"  {c.case_id:<16} {c.status:<10} {before_s:>6} -> {after_s:>6}")
+        typer.echo(str(report.summary()))
     if fail_on_regression and report.regressed:
         typer.echo(f"FAIL: {len(report.regressed)} case(s) regressed")
         raise typer.Exit(code=1)
