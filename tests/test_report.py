@@ -44,3 +44,28 @@ def test_diff_to_markdown():
     assert "abc123" in md and "def456" in md
     assert "regressed" in md
     assert "| 1 |" in md
+
+
+def test_run_to_html_is_self_contained():
+    from mingjing.report import run_to_html
+    html = run_to_html(_run())
+    assert html.lstrip().lower().startswith("<!doctype html>")
+    assert "<table" in html
+    assert "abc123" in html
+    assert "<style" in html  # inline styling, no external deps
+
+
+def test_cli_report_html_to_file(tmp_path):
+    from typer.testing import CliRunner
+
+    from mingjing.cli import app
+    from mingjing.store import RunStore
+    runner = CliRunner()
+    store = str(tmp_path / "d")
+    RunStore(store).save(_run())
+    out = tmp_path / "r.html"
+    res = runner.invoke(app, ["report", "abc123", "--store", store,
+                              "--format", "html", "--output", str(out)])
+    assert res.exit_code == 0
+    assert out.exists()
+    assert "<table" in out.read_text(encoding="utf-8")
