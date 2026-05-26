@@ -84,6 +84,14 @@ def report(run_id: str, store: str = ".mingjing",
         typer.echo(text)
 
 
+@app.command("models")
+def list_models() -> None:
+    """List first-class 国产 model aliases and their API key env vars."""
+    from .presets import CHINA_MODELS
+    for alias, info in CHINA_MODELS.items():
+        typer.echo(f"{alias:<20} -> {info['litellm']:<28} (env: {info['env']})  {info['note']}")
+
+
 def main() -> None:
     app()
 
