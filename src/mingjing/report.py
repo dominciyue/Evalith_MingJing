@@ -7,8 +7,13 @@ from .models import Run
 
 
 def _truncate(s: str, n: int = 80) -> str:
-    s = s.replace("\n", " ").strip()
+    s = " ".join(s.split())   # collapse all whitespace (newlines, tabs) to single spaces
     return s if len(s) <= n else s[: n - 1] + "…"
+
+
+def _md(s: str) -> str:
+    """Escape a value for a Markdown table cell (truncate + escape pipes)."""
+    return _truncate(s).replace("|", "\\|")
 
 
 def run_to_markdown(run: Run) -> str:
@@ -25,9 +30,9 @@ def run_to_markdown(run: Run) -> str:
         "| --- | --- | --- | --- |",
     ]
     for r in run.results:
-        scores = ", ".join(f"{s.scorer}={s.value:.2f}" for s in r.scores)
+        scores = ", ".join(f"{_md(s.scorer)}={s.value:.2f}" for s in r.scores)
         ok = "✅" if all(s.passed for s in r.scores) and r.scores else "❌"
-        lines.append(f"| {r.case_id} | {_truncate(r.output)} | {scores} | {ok} |")
+        lines.append(f"| {_md(r.case_id)} | {_md(r.output)} | {scores} | {ok} |")
     return "\n".join(lines) + "\n"
 
 
@@ -75,7 +80,7 @@ def diff_to_markdown(report: DiffReport, before_id: str, after_id: str) -> str:
     for c in report.cases:
         b = "—" if c.before is None else f"{c.before:.2f}"
         a = "—" if c.after is None else f"{c.after:.2f}"
-        lines.append(f"| {c.case_id} | {c.status} | {b} | {a} |")
+        lines.append(f"| {_md(c.case_id)} | {_md(c.status)} | {b} | {a} |")
     return "\n".join(lines) + "\n"
 
 

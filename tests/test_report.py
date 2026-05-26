@@ -46,6 +46,28 @@ def test_diff_to_markdown():
     assert "| 1 |" in md
 
 
+def test_markdown_escapes_pipes_in_output():
+    from mingjing.report import run_to_markdown
+    run = Run(id="z", name="n", created_at=datetime(2026, 5, 26, tzinfo=timezone.utc), model="m",
+              results=[CaseResult(case_id="a|b", input="i", output="yes | no",
+                                  scores=[Score(scorer="contains", value=1.0, passed=True)])])
+    md = run_to_markdown(run)
+    assert "yes \\| no" in md   # pipes in output escaped so the table doesn't break
+    assert "a\\|b" in md        # pipes in case_id escaped
+
+
+def test_cli_report_rejects_bad_format(tmp_path):
+    from typer.testing import CliRunner
+
+    from mingjing.cli import app
+    from mingjing.store import RunStore
+    runner = CliRunner()
+    store = str(tmp_path / "d")
+    RunStore(store).save(_run())
+    res = runner.invoke(app, ["report", "abc123", "--store", store, "--format", "pdf"])
+    assert res.exit_code != 0
+
+
 def test_run_to_html_is_self_contained():
     from mingjing.report import run_to_html
     html = run_to_html(_run())

@@ -26,8 +26,10 @@ def run(config: str, store: str = ".mingjing",
     passed = sum(1 for r in result.results for s in r.scores if s.passed)
     total = sum(len(r.scores) for r in result.results)
     typer.echo(f"Run {result.id} saved to {path} — {passed}/{total} checks passed")
-    if fail_under is not None and result.pass_rate < fail_under:
-        typer.echo(f"FAIL: pass rate {result.pass_rate:.2%} < threshold {fail_under:.2%}")
+    if fail_under is not None and (total == 0 or result.pass_rate < fail_under):
+        detail = ("no checks ran" if total == 0
+                  else f"pass rate {result.pass_rate:.2%} < threshold {fail_under:.2%}")
+        typer.echo(f"FAIL: {detail}")
         raise typer.Exit(code=1)
 
 
@@ -38,6 +40,8 @@ def diff(before: str, after: str, store: str = ".mingjing",
          fmt: str = typer.Option("text", "--format", help="text, md, or html"),
          output: str = typer.Option(None, "--output", help="write report to file")) -> None:
     """Compare two runs and show which cases improved or regressed."""
+    if fmt not in {"text", "md", "html"}:
+        raise typer.BadParameter("format must be 'text', 'md', or 'html'")
     s = RunStore(store)
     report = diff_runs(s.load(before), s.load(after))
     if fmt in {"md", "html"}:
@@ -74,6 +78,8 @@ def report(run_id: str, store: str = ".mingjing",
            output: str = typer.Option(None, "--output",
                help="write to file instead of stdout")) -> None:
     """Render a saved run as a shareable Markdown/HTML report."""
+    if fmt not in {"md", "html"}:
+        raise typer.BadParameter("format must be 'md' or 'html'")
     from .report import run_to_html, run_to_markdown
     run = RunStore(store).load(run_id)
     text = run_to_html(run) if fmt == "html" else run_to_markdown(run)

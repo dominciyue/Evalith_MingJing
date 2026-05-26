@@ -33,6 +33,18 @@ def test_run_fail_under_passes_when_met(tmp_path):
     assert res.exit_code == 0
 
 
+def test_run_fail_under_fails_when_no_checks(tmp_path):
+    # a config with no scorers => 0 checks => must NOT be a false green under a gate
+    ds = tmp_path / "ds.yaml"
+    ds.write_text("name: d\ncases:\n  - id: '1'\n    input: hello\n", encoding="utf-8")
+    cfg = tmp_path / "eval.yaml"
+    cfg.write_text(f"name: t\ndataset: {ds}\nmodel: echo\n"
+                   f"prompt_template: '{{{{input}}}}'\nscorers: []\n", encoding="utf-8")
+    res = runner.invoke(app, ["run", str(cfg), "--store", str(tmp_path / "d"),
+                              "--fail-under", "0.9"])
+    assert res.exit_code == 1
+
+
 def test_diff_fail_on_regression(tmp_path):
     from datetime import datetime, timezone
 
