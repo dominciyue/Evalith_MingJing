@@ -12,7 +12,9 @@ app = typer.Typer(help="明镜 / Evalith — AI regression testing")
 
 
 @app.command()
-def run(config: str, store: str = ".mingjing") -> None:
+def run(config: str, store: str = ".mingjing",
+        fail_under: float = typer.Option(None, "--fail-under",
+            help="Exit 1 if the pass rate is below this threshold (0..1).")) -> None:
     """Run an eval defined by CONFIG and save the resulting run."""
     cfg = load_config(config)
     result = run_eval(cfg, get_provider(cfg.model))
@@ -20,6 +22,9 @@ def run(config: str, store: str = ".mingjing") -> None:
     passed = sum(1 for r in result.results for s in r.scores if s.passed)
     total = sum(len(r.scores) for r in result.results)
     typer.echo(f"Run {result.id} saved to {path} — {passed}/{total} checks passed")
+    if fail_under is not None and result.pass_rate < fail_under:
+        typer.echo(f"FAIL: pass rate {result.pass_rate:.2%} < threshold {fail_under:.2%}")
+        raise typer.Exit(code=1)
 
 
 @app.command()

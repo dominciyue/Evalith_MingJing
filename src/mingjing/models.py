@@ -44,3 +44,8 @@ class Run(BaseModel):
     model: str
     results: list[CaseResult] = Field(default_factory=list)
     config: dict = Field(default_factory=dict)
+
+    @property
+    def pass_rate(self) -> float:
+        checks = [s for r in self.results for s in r.scores]
+        return sum(1 for s in checks if s.passed) / len(checks) if checks else 1.0
