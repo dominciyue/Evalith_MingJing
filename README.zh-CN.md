@@ -15,7 +15,7 @@
   拥有。明镜不绑定任何厂商,且完全开源(Apache-2.0)。
 - **本地优先。** 核心流程完全在本机运行——无需账号、无需上传、无需联网,
   你的 prompt 和测试数据始终在自己手里。
-- **国产模型一等公民。** DeepSeek、Qwen 与海外模型都是一等别名(`mingjing models`);
+- **国产模型一等公民。** DeepSeek、Qwen 与海外模型都是一等别名(`evalith models`);
   内置中文 `llm_judge`。
 - **看回归,不看感觉。** `diff` 与 `--fail-on-regression` 会告诉你:改了 prompt、
   换了模型或升了版本后,哪些用例变好、变差或直接坏了。
@@ -33,14 +33,14 @@ pip install -e ".[litellm]" # 可选:接入真实模型(DeepSeek/Qwen/OpenAI/Cla
 
 ```bash
 # 1. 跑示例评测 —— 使用离线 `echo` 模型,2/2 通过
-mingjing run examples/eval.yaml
+evalith run examples/eval.yaml
 
 # 2. 在 examples/eval.yaml 里改 prompt/模型,再跑一次
-mingjing run examples/eval.yaml
+evalith run examples/eval.yaml
 
 # 3. 列出运行记录,对比最新两次以发现回归
-mingjing list
-mingjing diff <较旧的_RUN_ID> <较新的_RUN_ID>
+evalith list
+evalith diff <较旧的_RUN_ID> <较新的_RUN_ID>
 ```
 
 ## 在 CI 里拦住回归
@@ -49,10 +49,10 @@ mingjing diff <较旧的_RUN_ID> <较新的_RUN_ID>
 
 ```bash
 # 绝对门槛:通过率低于 90% 就失败(无需基线)
-mingjing run examples/eval.yaml --fail-under 0.9
+evalith run examples/eval.yaml --fail-under 0.9
 
 # 相对门槛:相比基线运行,只要有用例回退就失败
-mingjing diff <基线_RUN_ID> <新的_RUN_ID> --fail-on-regression
+evalith diff <基线_RUN_ID> <新的_RUN_ID> --fail-on-regression
 ```
 
 两者失败时都以非零码退出,CI 会拦下该 PR。本仓库自带一个**复合 GitHub Action**——
@@ -79,9 +79,9 @@ jobs:
 把一次 run 或一次 diff 导出为 Markdown(贴到 PR)或自包含的 HTML 页面:
 
 ```bash
-mingjing report <RUN_ID> --format md                        # Markdown 输出到 stdout
-mingjing report <RUN_ID> --format html --output report.html # 独立 HTML 文件
-mingjing diff <A> <B> --format md --output diff.md           # diff 导出为 Markdown
+evalith report <RUN_ID> --format md                        # Markdown 输出到 stdout
+evalith report <RUN_ID> --format html --output report.html # 独立 HTML 文件
+evalith diff <A> <B> --format md --output diff.md           # diff 导出为 Markdown
 ```
 
 报告包含通过率、平均分,以及——使用真实模型时——**成本、token 数、延迟**。
@@ -89,10 +89,10 @@ mingjing diff <A> <B> --format md --output diff.md           # diff 导出为 Ma
 ## 接入真实模型(国产一等公民)
 
 ```bash
-mingjing models          # 列出一等别名 + 各自需要的环境变量
+evalith models          # 列出一等别名 + 各自需要的环境变量
 export DEEPSEEK_API_KEY=sk-...
-mingjing run examples/eval.deepseek.yaml --concurrency 3
-# -> Run <id> saved to .mingjing/runs/<id>.json — 6/6 checks passed
+evalith run examples/eval.deepseek.yaml --concurrency 3
+# -> Run <id> saved to .evalith/runs/<id>.json — 6/6 checks passed
 ```
 
 `model:` 可填别名(`deepseek-chat`、`deepseek-reasoner`、`qwen-max`、`qwen-plus`)
@@ -117,7 +117,7 @@ API key。`llm_judge` 评分器可用 `params: {language: zh}` 进行中文评�
 ## 工作原理
 
 `run` 针对某个模型执行配置,并把一次 **Run**(每条用例的输出、分数、token、成本、
-延迟的 JSON 快照)保存到 `.mingjing/runs/`。`diff` 逐条比较两次保存的 Run,把每条
+延迟的 JSON 快照)保存到 `.evalith/runs/`。`diff` 逐条比较两次保存的 Run,把每条
 用例标记为**改进 / 回退 / 不变 / 新增 / 移除**。
 
 ## 状态

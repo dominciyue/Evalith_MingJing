@@ -17,7 +17,7 @@ prompt or model change can't silently break your product.
 - **Local-first.** The core workflow runs entirely on your machine — no account,
   no upload, no network. Your prompts and test data stay with you.
 - **China models first-class.** DeepSeek, Qwen and global models are first-class
-  aliases (`mingjing models`); a Chinese `llm_judge` ships in the box.
+  aliases (`evalith models`); a Chinese `llm_judge` ships in the box.
 - **Regressions, not vibes.** `diff` and `--fail-on-regression` tell you which
   cases improved, regressed, or broke when you change a prompt, model, or version.
 
@@ -34,14 +34,14 @@ pip install -e ".[litellm]" # optional: real models (DeepSeek/Qwen/OpenAI/Claude
 
 ```bash
 # 1. Run the example eval — uses the offline `echo` model, passes 2/2
-mingjing run examples/eval.yaml
+evalith run examples/eval.yaml
 
 # 2. Tweak your prompt/model in examples/eval.yaml, then run again
-mingjing run examples/eval.yaml
+evalith run examples/eval.yaml
 
 # 3. List runs, then diff the two newest to spot regressions
-mingjing list
-mingjing diff <OLDER_RUN_ID> <NEWER_RUN_ID>
+evalith list
+evalith diff <OLDER_RUN_ID> <NEWER_RUN_ID>
 ```
 
 ## Gate CI on regressions
@@ -50,10 +50,10 @@ Fail a build when quality drops — two ways:
 
 ```bash
 # Absolute gate: fail if fewer than 90% of checks pass (no baseline needed)
-mingjing run examples/eval.yaml --fail-under 0.9
+evalith run examples/eval.yaml --fail-under 0.9
 
 # Relative gate: fail if any case regressed vs a baseline run
-mingjing diff <BASELINE_RUN_ID> <NEW_RUN_ID> --fail-on-regression
+evalith diff <BASELINE_RUN_ID> <NEW_RUN_ID> --fail-on-regression
 ```
 
 Both exit non-zero on failure, so CI stops the PR. This repo ships a **composite
@@ -80,9 +80,9 @@ jobs:
 Turn a run or a diff into Markdown (for PR comments) or a self-contained HTML page:
 
 ```bash
-mingjing report <RUN_ID> --format md                       # Markdown to stdout
-mingjing report <RUN_ID> --format html --output report.html # standalone HTML file
-mingjing diff <A> <B> --format md --output diff.md          # diff as Markdown
+evalith report <RUN_ID> --format md                       # Markdown to stdout
+evalith report <RUN_ID> --format html --output report.html # standalone HTML file
+evalith diff <A> <B> --format md --output diff.md          # diff as Markdown
 ```
 
 Reports include the pass rate, mean score, and — for real models — **cost, token
@@ -91,10 +91,10 @@ count, and latency**.
 ## Using real models (国产 first-class)
 
 ```bash
-mingjing models          # list first-class aliases + the env var each needs
+evalith models          # list first-class aliases + the env var each needs
 export DEEPSEEK_API_KEY=sk-...
-mingjing run examples/eval.deepseek.yaml --concurrency 3
-# -> Run <id> saved to .mingjing/runs/<id>.json — 6/6 checks passed
+evalith run examples/eval.deepseek.yaml --concurrency 3
+# -> Run <id> saved to .evalith/runs/<id>.json — 6/6 checks passed
 ```
 
 Set `model:` to an alias (`deepseek-chat`, `deepseek-reasoner`, `qwen-max`,
@@ -120,7 +120,7 @@ then set that provider's API key. The `llm_judge` scorer can grade in Chinese wi
 ## How it works
 
 `run` evaluates a config against a model and saves a **Run** — a JSON snapshot of
-every case's output, scores, tokens, cost, and latency — to `.mingjing/runs/`.
+every case's output, scores, tokens, cost, and latency — to `.evalith/runs/`.
 `diff` compares two saved runs case-by-case and labels each **improved / regressed
 / unchanged / new / removed**.
 

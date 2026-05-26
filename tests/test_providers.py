@@ -1,5 +1,5 @@
-from mingjing.providers import get_provider
-from mingjing.providers.base import EchoProvider, FakeProvider
+from evalith.providers import get_provider
+from evalith.providers.base import EchoProvider, FakeProvider
 
 
 def test_echo_provider_echoes_prompt():
@@ -22,7 +22,7 @@ def test_get_provider_echo():
 
 
 def test_usage_from_response_pure():
-    from mingjing.providers.litellm_provider import _usage_from_response
+    from evalith.providers.litellm_provider import _usage_from_response
     fake = {"usage": {"prompt_tokens": 5, "completion_tokens": 7, "total_tokens": 12}}
     assert _usage_from_response(fake) == (5, 7, 12)
     assert _usage_from_response({}) == (0, 0, 0)   # missing usage -> zeros

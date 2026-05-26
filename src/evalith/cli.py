@@ -14,7 +14,7 @@ app = typer.Typer(help="明镜 / Evalith — AI regression testing")
 
 
 @app.command()
-def run(config: str, store: str = ".mingjing",
+def run(config: str, store: str = ".evalith",
         concurrency: int = typer.Option(None, "--concurrency",
             help="Parallel provider calls (default: from config, else 1)."),
         fail_under: float = typer.Option(None, "--fail-under",
@@ -34,7 +34,7 @@ def run(config: str, store: str = ".mingjing",
 
 
 @app.command()
-def diff(before: str, after: str, store: str = ".mingjing",
+def diff(before: str, after: str, store: str = ".evalith",
          fail_on_regression: bool = typer.Option(False, "--fail-on-regression",
              help="Exit 1 if any case regressed."),
          fmt: str = typer.Option("text", "--format", help="text, md, or html"),
@@ -66,14 +66,14 @@ def diff(before: str, after: str, store: str = ".mingjing",
 
 
 @app.command("list")
-def list_runs(store: str = ".mingjing") -> None:
+def list_runs(store: str = ".evalith") -> None:
     """List stored runs, newest first."""
     for r in RunStore(store).list_runs():
         typer.echo(f"{r.id}  {r.created_at:%Y-%m-%d %H:%M}  {r.name}  ({r.model})")
 
 
 @app.command()
-def report(run_id: str, store: str = ".mingjing",
+def report(run_id: str, store: str = ".evalith",
            fmt: str = typer.Option("md", "--format", help="md or html"),
            output: str = typer.Option(None, "--output",
                help="write to file instead of stdout")) -> None:

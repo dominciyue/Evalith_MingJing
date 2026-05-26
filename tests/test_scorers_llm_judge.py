@@ -1,6 +1,6 @@
-from mingjing.models import TestCase
-from mingjing.providers.base import FakeProvider
-from mingjing.scorers.llm_judge import LLMJudge
+from evalith.models import TestCase
+from evalith.providers.base import FakeProvider
+from evalith.scorers.llm_judge import LLMJudge
 
 
 def test_llm_judge_parses_json():
@@ -30,7 +30,7 @@ def test_llm_judge_handles_garbage():
 
 
 def test_llm_judge_chinese_prompt_and_parse():
-    from mingjing.scorers.llm_judge import JUDGE_PROMPTS
+    from evalith.scorers.llm_judge import JUDGE_PROMPTS
     assert "zh" in JUDGE_PROMPTS and "请" in JUDGE_PROMPTS["zh"]
     judge = LLMJudge(
         provider=FakeProvider(default='{"score": 1.0, "pass": true, "reason": "对"}'),

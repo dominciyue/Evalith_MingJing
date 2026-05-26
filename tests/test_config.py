@@ -1,4 +1,4 @@
-from mingjing.config import load_config
+from evalith.config import load_config
 
 
 def test_load_config(tmp_path):

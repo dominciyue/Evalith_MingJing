@@ -26,4 +26,4 @@ runs:
       run: pip install -e "${{ github.action_path }}[litellm]"
     - name: Run eval gate
       shell: bash
-      run: mingjing run "${{ inputs.config }}" --fail-under "${{ inputs.fail-under }}"
+      run: evalith run "${{ inputs.config }}" --fail-under "${{ inputs.fail-under }}"

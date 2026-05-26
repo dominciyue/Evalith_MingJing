@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from mingjing.models import CaseResult, Run, Score
+from evalith.models import CaseResult, Run, Score
 
 
 def _run():
@@ -12,7 +12,7 @@ def _run():
 
 
 def test_run_to_markdown_has_summary_and_row():
-    from mingjing.report import run_to_markdown
+    from evalith.report import run_to_markdown
     md = run_to_markdown(_run())
     assert "# Run abc123" in md
     assert "deepseek/deepseek-chat" in md
@@ -23,8 +23,8 @@ def test_run_to_markdown_has_summary_and_row():
 def test_cli_report_markdown(tmp_path):
     from typer.testing import CliRunner
 
-    from mingjing.cli import app
-    from mingjing.store import RunStore
+    from evalith.cli import app
+    from evalith.store import RunStore
     runner = CliRunner()
     store = str(tmp_path / "d")
     RunStore(store).save(_run())
@@ -34,8 +34,8 @@ def test_cli_report_markdown(tmp_path):
 
 
 def test_diff_to_markdown():
-    from mingjing.diff import diff_runs
-    from mingjing.report import diff_to_markdown
+    from evalith.diff import diff_runs
+    from evalith.report import diff_to_markdown
     a = _run()
     b = Run(id="def456", name="demo", created_at=a.created_at, model=a.model,
             results=[CaseResult(case_id="1", input="2+2?", output="5",
@@ -47,7 +47,7 @@ def test_diff_to_markdown():
 
 
 def test_markdown_escapes_pipes_in_output():
-    from mingjing.report import run_to_markdown
+    from evalith.report import run_to_markdown
     run = Run(id="z", name="n", created_at=datetime(2026, 5, 26, tzinfo=timezone.utc), model="m",
               results=[CaseResult(case_id="a|b", input="i", output="yes | no",
                                   scores=[Score(scorer="contains", value=1.0, passed=True)])])
@@ -59,8 +59,8 @@ def test_markdown_escapes_pipes_in_output():
 def test_cli_report_rejects_bad_format(tmp_path):
     from typer.testing import CliRunner
 
-    from mingjing.cli import app
-    from mingjing.store import RunStore
+    from evalith.cli import app
+    from evalith.store import RunStore
     runner = CliRunner()
     store = str(tmp_path / "d")
     RunStore(store).save(_run())
@@ -69,7 +69,7 @@ def test_cli_report_rejects_bad_format(tmp_path):
 
 
 def test_run_to_html_is_self_contained():
-    from mingjing.report import run_to_html
+    from evalith.report import run_to_html
     html = run_to_html(_run())
     assert html.lstrip().lower().startswith("<!doctype html>")
     assert "<table" in html
@@ -80,8 +80,8 @@ def test_run_to_html_is_self_contained():
 def test_cli_report_html_to_file(tmp_path):
     from typer.testing import CliRunner
 
-    from mingjing.cli import app
-    from mingjing.store import RunStore
+    from evalith.cli import app
+    from evalith.store import RunStore
     runner = CliRunner()
     store = str(tmp_path / "d")
     RunStore(store).save(_run())

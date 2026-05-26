@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from mingjing.diff import diff_runs
-from mingjing.models import CaseResult, Run, Score
+from evalith.diff import diff_runs
+from evalith.models import CaseResult, Run, Score
 
 
 def _run(rid: str, scores_by_case: dict[str, float]) -> Run:

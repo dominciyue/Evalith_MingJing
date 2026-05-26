@@ -1,6 +1,6 @@
 name: deepseek-smoke
 dataset: examples/qa.yaml
-model: deepseek-chat        # alias (see `mingjing models`); needs DEEPSEEK_API_KEY + pip install -e ".[litellm]"
+model: deepseek-chat        # alias (see `evalith models`); needs DEEPSEEK_API_KEY + pip install -e ".[litellm]"
 prompt_template: "{{input}}"
 temperature: 0.0
 concurrency: 3             # run cases in parallel

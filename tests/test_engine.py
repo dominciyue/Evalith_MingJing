@@ -1,6 +1,6 @@
-from mingjing.config import EvalConfig, ScorerConfig
-from mingjing.engine import run_eval
-from mingjing.providers.base import FakeProvider
+from evalith.config import EvalConfig, ScorerConfig
+from evalith.engine import run_eval
+from evalith.providers.base import FakeProvider
 
 
 def test_run_eval_with_fake_provider(tmp_path):
@@ -27,7 +27,7 @@ def test_run_eval_renders_template(tmp_path):
     ds.write_text("name: d\ncases:\n  - id: '1'\n    input: world\n", encoding="utf-8")
     cfg = EvalConfig(name="t", dataset=str(ds), model="echo",
                      prompt_template="Hello {{input}}")
-    from mingjing.providers.base import EchoProvider
+    from evalith.providers.base import EchoProvider
 
     run = run_eval(cfg, EchoProvider())
     assert run.results[0].output == "Hello world"

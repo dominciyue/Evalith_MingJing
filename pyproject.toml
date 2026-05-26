@@ -1,27 +1,47 @@
 [project]
-name = "mingjing"
+name = "evalith"
 version = "0.2.0"
-description = "Neutral AI regression-testing tool (明镜 / Evalith)"
+description = "Neutral, local-first AI regression-testing tool (明镜 / Evalith)"
+readme = "README.md"
 requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "PattyWoods" }]
+keywords = ["llm", "evaluation", "eval", "regression-testing", "ai", "testing", "prompt", "deepseek", "qwen", "litellm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "pydantic>=2.6",
     "pyyaml>=6.0",
     "typer>=0.12",
 ]
 
+[project.urls]
+Homepage = "https://github.com/dominciyue/Evalith_MingJing"
+Repository = "https://github.com/dominciyue/Evalith_MingJing"
+Issues = "https://github.com/dominciyue/Evalith_MingJing/issues"
+
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 litellm = ["litellm>=1.40"]
 
 [project.scripts]
-mingjing = "mingjing.cli:main"
+evalith = "evalith.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mingjing"]
+packages = ["src/evalith"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

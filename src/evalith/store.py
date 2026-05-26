@@ -8,7 +8,7 @@ from .models import Run
 class RunStore:
     """Persists Runs as JSON files under <root>/runs/."""
 
-    def __init__(self, root: str | Path = ".mingjing"):
+    def __init__(self, root: str | Path = ".evalith"):
         self.root = Path(root)
         self.runs_dir = self.root / "runs"
         self.runs_dir.mkdir(parents=True, exist_ok=True)

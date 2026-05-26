@@ -1,6 +1,6 @@
 import pytest
 
-from mingjing.dataset import load_dataset
+from evalith.dataset import load_dataset
 
 
 def test_load_yaml_dataset(tmp_path):

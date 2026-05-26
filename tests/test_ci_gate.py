@@ -1,7 +1,7 @@
 from typer.testing import CliRunner
 
-from mingjing.cli import app
-from mingjing.store import RunStore
+from evalith.cli import app
+from evalith.store import RunStore
 
 runner = CliRunner()
 
@@ -48,7 +48,7 @@ def test_run_fail_under_fails_when_no_checks(tmp_path):
 def test_diff_fail_on_regression(tmp_path):
     from datetime import datetime, timezone
 
-    from mingjing.models import CaseResult, Run, Score
+    from evalith.models import CaseResult, Run, Score
 
     s = str(tmp_path / "d")
     store = RunStore(s)

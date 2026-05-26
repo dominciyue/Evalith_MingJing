@@ -1,7 +1,7 @@
 from typer.testing import CliRunner
 
-from mingjing.cli import app
-from mingjing.store import RunStore
+from evalith.cli import app
+from evalith.store import RunStore
 
 runner = CliRunner()
 

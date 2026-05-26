@@ -1,6 +1,6 @@
-from mingjing.config import ScorerConfig
-from mingjing.models import TestCase
-from mingjing.scorers.rules import Contains, ExactMatch, Regex, build_scorer
+from evalith.config import ScorerConfig
+from evalith.models import TestCase
+from evalith.scorers.rules import Contains, ExactMatch, Regex, build_scorer
 
 
 def test_exact_match():

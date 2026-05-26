@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from mingjing.models import CaseResult, Run
-from mingjing.store import RunStore
+from evalith.models import CaseResult, Run
+from evalith.store import RunStore
 
 
 def _run(rid: str) -> Run:

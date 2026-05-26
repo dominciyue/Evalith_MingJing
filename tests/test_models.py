@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from mingjing.models import CaseResult, Run, Score
+from evalith.models import CaseResult, Run, Score
 
 
 def test_case_result_mean_score():
