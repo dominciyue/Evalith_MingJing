@@ -8,6 +8,10 @@ from typing import Protocol
 class Response:
     text: str
     latency_ms: float = 0.0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cost_usd: float = 0.0
 
 
 class Provider(Protocol):

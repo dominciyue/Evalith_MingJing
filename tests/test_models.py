@@ -40,3 +40,18 @@ def test_run_pass_rate():
     assert r.pass_rate == 2 / 3            # 2 of 3 checks passed
     assert Run(id="y", name="t", created_at=datetime(2026, 5, 26, tzinfo=timezone.utc),
                model="echo", results=[]).pass_rate == 1.0   # no checks => nothing failed
+
+
+def test_run_cost_and_latency_aggregates():
+    r = Run(
+        id="x", name="t", created_at=datetime.now(timezone.utc), model="m",
+        results=[
+            CaseResult(case_id="1", input="i", output="o", latency_ms=100.0,
+                       total_tokens=10, cost_usd=0.001),
+            CaseResult(case_id="2", input="i", output="o", latency_ms=300.0,
+                       total_tokens=20, cost_usd=0.002),
+        ],
+    )
+    assert r.total_tokens == 30
+    assert abs(r.total_cost_usd - 0.003) < 1e-9
+    assert r.mean_latency_ms == 200.0

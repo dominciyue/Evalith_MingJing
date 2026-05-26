@@ -26,7 +26,9 @@ def run_eval(config: EvalConfig, provider: Provider,
         scores = [scorer.score(case, resp.text) for scorer in scorers]
         results.append(
             CaseResult(case_id=case.id, input=case.input, output=resp.text,
-                       scores=scores, latency_ms=resp.latency_ms)
+                       scores=scores, latency_ms=resp.latency_ms,
+                       prompt_tokens=resp.prompt_tokens, completion_tokens=resp.completion_tokens,
+                       total_tokens=resp.total_tokens, cost_usd=resp.cost_usd)
         )
     return Run(
         id=uuid.uuid4().hex[:12],

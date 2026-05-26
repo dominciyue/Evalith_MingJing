@@ -19,3 +19,10 @@ def test_fake_provider_canned_and_default():
 def test_get_provider_echo():
     assert isinstance(get_provider("echo"), EchoProvider)
     assert get_provider("echo:ok").complete("x").text == "ok"
+
+
+def test_usage_from_response_pure():
+    from mingjing.providers.litellm_provider import _usage_from_response
+    fake = {"usage": {"prompt_tokens": 5, "completion_tokens": 7, "total_tokens": 12}}
+    assert _usage_from_response(fake) == (5, 7, 12)
+    assert _usage_from_response({}) == (0, 0, 0)   # missing usage -> zeros

@@ -31,6 +31,10 @@ class CaseResult(BaseModel):
     output: str
     scores: list[Score] = Field(default_factory=list)
     latency_ms: float = 0.0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cost_usd: float = 0.0
 
     @property
     def mean_score(self) -> float:
@@ -49,3 +53,19 @@ class Run(BaseModel):
     def pass_rate(self) -> float:
         checks = [s for r in self.results for s in r.scores]
         return sum(1 for s in checks if s.passed) / len(checks) if checks else 1.0
+
+    @property
+    def mean_score(self) -> float:
+        return sum(r.mean_score for r in self.results) / len(self.results) if self.results else 0.0
+
+    @property
+    def total_tokens(self) -> int:
+        return sum(r.total_tokens for r in self.results)
+
+    @property
+    def total_cost_usd(self) -> float:
+        return sum(r.cost_usd for r in self.results)
+
+    @property
+    def mean_latency_ms(self) -> float:
+        return sum(r.latency_ms for r in self.results) / len(self.results) if self.results else 0.0
