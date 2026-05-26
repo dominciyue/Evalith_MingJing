@@ -1,10 +1,12 @@
 name: deepseek-smoke
 dataset: examples/qa.yaml
-model: deepseek/deepseek-chat   # needs: export DEEPSEEK_API_KEY=... and pip install -e ".[litellm]"
+model: deepseek-chat        # alias (see `mingjing models`); needs DEEPSEEK_API_KEY + pip install -e ".[litellm]"
 prompt_template: "{{input}}"
 temperature: 0.0
+concurrency: 3             # run cases in parallel
 scorers:
   - type: contains          # output contains each case's `expected`
-  - type: llm_judge         # second pass: an LLM grades the answer against criteria
+  - type: llm_judge         # second pass: an LLM grades the answer
     params:
       criteria: "回答是否准确、直接地回应了问题"
+      language: zh           # use the Chinese judge prompt

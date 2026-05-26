@@ -6,7 +6,8 @@
 
 A neutral, local-first **AI regression-testing** tool. Define a test set, run it
 against any model (DeepSeek / Qwen / OpenAI / Claude / …), score every case, and
-**diff two runs to see exactly what got better or worse** — instead of shipping on vibes.
+**diff two runs to see exactly what got better or worse** — then **gate CI** so a
+prompt or model change can't silently break your product.
 
 ## Why Evalith
 
@@ -15,10 +16,10 @@ against any model (DeepSeek / Qwen / OpenAI / Claude / …), score every case, a
   source (Apache-2.0).
 - **Local-first.** The core workflow runs entirely on your machine — no account,
   no upload, no network. Your prompts and test data stay with you.
-- **China models first-class.** DeepSeek, Qwen, 豆包, GLM and global models are
-  all just a `model:` string away (via [LiteLLM](https://docs.litellm.ai/docs/providers)).
-- **Regressions, not vibes.** `diff` tells you which cases improved, regressed,
-  or broke when you change a prompt, a model, or a version.
+- **China models first-class.** DeepSeek, Qwen and global models are first-class
+  aliases (`mingjing models`); a Chinese `llm_judge` ships in the box.
+- **Regressions, not vibes.** `diff` and `--fail-on-regression` tell you which
+  cases improved, regressed, or broke when you change a prompt, model, or version.
 
 ## Install
 
@@ -43,20 +44,69 @@ mingjing list
 mingjing diff <OLDER_RUN_ID> <NEWER_RUN_ID>
 ```
 
-## Using a real model (DeepSeek example)
+## Gate CI on regressions
 
-`examples/eval.deepseek.yaml` evaluates `deepseek/deepseek-chat` on a few factual
-questions, scoring each with both a `contains` check and an `llm_judge` pass:
+Fail a build when quality drops — two ways:
 
 ```bash
-pip install -e ".[litellm]"
+# Absolute gate: fail if fewer than 90% of checks pass (no baseline needed)
+mingjing run examples/eval.yaml --fail-under 0.9
+
+# Relative gate: fail if any case regressed vs a baseline run
+mingjing diff <BASELINE_RUN_ID> <NEW_RUN_ID> --fail-on-regression
+```
+
+Both exit non-zero on failure, so CI stops the PR. This repo ships a **composite
+GitHub Action** — drop this into `.github/workflows/eval.yml`:
+
+```yaml
+name: AI eval gate
+on: [pull_request]
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dominciyue/Evalith_MingJing@main
+        with:
+          config: examples/eval.yaml
+          fail-under: "0.9"
+```
+
+(See `.github/workflows/eval-example.yml` for a working copy using the offline demo.)
+
+## Shareable reports
+
+Turn a run or a diff into Markdown (for PR comments) or a self-contained HTML page:
+
+```bash
+mingjing report <RUN_ID> --format md                       # Markdown to stdout
+mingjing report <RUN_ID> --format html --output report.html # standalone HTML file
+mingjing diff <A> <B> --format md --output diff.md          # diff as Markdown
+```
+
+Reports include the pass rate, mean score, and — for real models — **cost, token
+count, and latency**.
+
+## Using real models (国产 first-class)
+
+```bash
+mingjing models          # list first-class aliases + the env var each needs
 export DEEPSEEK_API_KEY=sk-...
-mingjing run examples/eval.deepseek.yaml
+mingjing run examples/eval.deepseek.yaml --concurrency 3
 # -> Run <id> saved to .mingjing/runs/<id>.json — 6/6 checks passed
 ```
 
-Swap `model:` for any LiteLLM-supported model — `qwen/qwen-max`, `gpt-4o-mini`,
-`claude-3-5-sonnet`, etc. — and set that provider's API key.
+Set `model:` to an alias (`deepseek-chat`, `deepseek-reasoner`, `qwen-max`,
+`qwen-plus`) or any LiteLLM id directly (`gpt-4o-mini`, `claude-3-5-sonnet`, …),
+then set that provider's API key. The `llm_judge` scorer can grade in Chinese with
+`params: {language: zh}`.
+
+## Scale
+
+- `--concurrency N` runs cases in parallel (provider calls are I/O-bound), or set
+  `concurrency:` in the config. Order of results is always preserved.
+- Datasets load from **YAML, JSON, CSV, or JSONL** (`examples/qa.jsonl`).
 
 ## Scorers
 
@@ -65,20 +115,21 @@ Swap `model:` for any LiteLLM-supported model — `qwen/qwen-max`, `gpt-4o-mini`
 | `exact_match` | output equals the case's `expected` |
 | `contains`    | output contains `params.text` (or the case's `expected`) |
 | `regex`       | output matches `params.pattern` |
-| `llm_judge`   | an LLM grades the output against `params.criteria` |
+| `llm_judge`   | an LLM grades the output against `params.criteria` (`params.language: en\|zh`) |
 
 ## How it works
 
 `run` evaluates a config against a model and saves a **Run** — a JSON snapshot of
-every case's output and scores — to `.mingjing/runs/`. `diff` compares two saved
-runs case-by-case and labels each **improved / regressed / unchanged / new /
-removed**, so a prompt or model change can't silently break things.
+every case's output, scores, tokens, cost, and latency — to `.mingjing/runs/`.
+`diff` compares two saved runs case-by-case and labels each **improved / regressed
+/ unchanged / new / removed**.
 
 ## Status
 
-v0.1 — single-turn prompt evaluation, file-based run store, run-to-run diff, and a
-provider layer for Chinese + global models. Team/cloud features are on the roadmap.
-Issues and PRs welcome.
+v0.2 — single-turn prompt evaluation, file-based run store, run-to-run diff,
+CI gating (`--fail-under`, `--fail-on-regression`, GitHub Action), Markdown/HTML
+reports, concurrency, cost/token/latency tracking, and 国产 model aliases with a
+Chinese judge. Team/cloud features are on the roadmap. Issues and PRs welcome.
 
 ## License
 
