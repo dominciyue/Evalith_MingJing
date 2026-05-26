@@ -1,0 +1,12 @@
+name: AI eval gate (example)
+on: [pull_request]
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Evalith gate (offline echo demo — no API key)
+        uses: ./
+        with:
+          config: examples/eval.yaml
+          fail-under: "1.0"

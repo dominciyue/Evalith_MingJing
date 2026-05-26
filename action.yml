@@ -1,0 +1,29 @@
+name: "Evalith eval gate"
+description: "Run an Evalith AI eval and fail the build if the pass rate drops below a threshold."
+branding:
+  icon: "check-circle"
+  color: "blue"
+inputs:
+  config:
+    description: "Path to the eval config YAML"
+    required: true
+  fail-under:
+    description: "Minimum pass rate (0..1) required to pass"
+    required: false
+    default: "1.0"
+  python-version:
+    description: "Python version"
+    required: false
+    default: "3.11"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Install Evalith
+      shell: bash
+      run: pip install -e "${{ github.action_path }}[litellm]"
+    - name: Run eval gate
+      shell: bash
+      run: mingjing run "${{ inputs.config }}" --fail-under "${{ inputs.fail-under }}"
