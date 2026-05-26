@@ -42,3 +42,26 @@ def test_run_eval_concurrent_preserves_order(tmp_path):
     run = run_eval(cfg, FakeProvider(default="q-default"), concurrency=8)
     assert [r.case_id for r in run.results] == [str(i) for i in range(20)]
     assert len(run.results) == 20
+
+
+def test_run_eval_survives_provider_error(tmp_path):
+    from evalith.providers.base import Response
+
+    class FlakyProvider:
+        model = "flaky"
+
+        def complete(self, prompt, *, system=None, temperature=0.0):
+            if "boom" in prompt:
+                raise RuntimeError("rate limited")
+            return Response(text="ok")
+
+    ds = tmp_path / "ds.yaml"
+    ds.write_text("name: d\ncases:\n  - id: good\n    input: hi\n"
+                  "  - id: bad\n    input: boom\n", encoding="utf-8")
+    cfg = EvalConfig(name="t", dataset=str(ds), model="flaky", prompt_template="{{input}}",
+                     scorers=[ScorerConfig(type="contains", params={"text": "ok"})])
+    run = run_eval(cfg, FlakyProvider(), concurrency=4)
+    assert len(run.results) == 2                       # one bad case did NOT kill the run
+    by_id = {r.case_id: r for r in run.results}
+    assert by_id["good"].scores[0].passed is True
+    assert by_id["bad"].scores and all(not s.passed for s in by_id["bad"].scores)

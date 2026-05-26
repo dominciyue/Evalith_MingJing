@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from .config import EvalConfig
 from .dataset import load_dataset
-from .models import CaseResult, Run
+from .models import CaseResult, Run, Score
 from .providers.base import Provider
 from .scorers.rules import build_scorer
 
@@ -24,13 +24,18 @@ def run_eval(config: EvalConfig, provider: Provider,
     workers = max(1, concurrency if concurrency is not None else config.concurrency)
 
     def _eval_case(case) -> CaseResult:
-        prompt = _render(config.prompt_template, case.input)
-        resp = provider.complete(prompt, system=config.system, temperature=config.temperature)
-        scores = [scorer.score(case, resp.text) for scorer in scorers]
-        return CaseResult(case_id=case.id, input=case.input, output=resp.text,
-                          scores=scores, latency_ms=resp.latency_ms,
-                          prompt_tokens=resp.prompt_tokens, completion_tokens=resp.completion_tokens,
-                          total_tokens=resp.total_tokens, cost_usd=resp.cost_usd)
+        try:
+            prompt = _render(config.prompt_template, case.input)
+            resp = provider.complete(prompt, system=config.system, temperature=config.temperature)
+            scores = [scorer.score(case, resp.text) for scorer in scorers]
+            return CaseResult(case_id=case.id, input=case.input, output=resp.text,
+                              scores=scores, latency_ms=resp.latency_ms,
+                              prompt_tokens=resp.prompt_tokens, completion_tokens=resp.completion_tokens,
+                              total_tokens=resp.total_tokens, cost_usd=resp.cost_usd)
+        except Exception as e:  # one failed case must not kill the whole run
+            return CaseResult(case_id=case.id, input=case.input, output="",
+                              scores=[Score(scorer="error", value=0.0, passed=False,
+                                            detail=f"{type(e).__name__}: {e}")])
 
     if workers == 1:
         results = [_eval_case(c) for c in dataset.cases]

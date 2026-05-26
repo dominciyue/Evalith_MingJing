@@ -25,7 +25,9 @@ def run(config: str, store: str = ".evalith",
     path = RunStore(store).save(result)
     passed = sum(1 for r in result.results for s in r.scores if s.passed)
     total = sum(len(r.scores) for r in result.results)
-    typer.echo(f"Run {result.id} saved to {path} — {passed}/{total} checks passed")
+    errors = sum(1 for r in result.results for s in r.scores if s.scorer == "error")
+    suffix = f"  ({errors} errored)" if errors else ""
+    typer.echo(f"Run {result.id} saved to {path} — {passed}/{total} checks passed{suffix}")
     if fail_under is not None and (total == 0 or result.pass_rate < fail_under):
         detail = ("no checks ran" if total == 0
                   else f"pass rate {result.pass_rate:.2%} < threshold {fail_under:.2%}")
