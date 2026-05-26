@@ -28,7 +28,9 @@ def run(config: str, store: str = ".mingjing",
 
 
 @app.command()
-def diff(before: str, after: str, store: str = ".mingjing") -> None:
+def diff(before: str, after: str, store: str = ".mingjing",
+         fail_on_regression: bool = typer.Option(False, "--fail-on-regression",
+             help="Exit 1 if any case regressed.")) -> None:
     """Compare two runs and show which cases improved or regressed."""
     s = RunStore(store)
     report = diff_runs(s.load(before), s.load(after))
@@ -38,6 +40,9 @@ def diff(before: str, after: str, store: str = ".mingjing") -> None:
         after_s = "-" if c.after is None else f"{c.after:.2f}"
         typer.echo(f"  {c.case_id:<16} {c.status:<10} {before_s:>6} -> {after_s:>6}")
     typer.echo(str(report.summary()))
+    if fail_on_regression and report.regressed:
+        typer.echo(f"FAIL: {len(report.regressed)} case(s) regressed")
+        raise typer.Exit(code=1)
 
 
 @app.command("list")
