@@ -52,5 +52,6 @@ def build_scorer(cfg: ScorerConfig, judge_provider=None) -> Scorer:
     if cfg.type == "llm_judge":
         from .llm_judge import LLMJudge
 
-        return LLMJudge(provider=judge_provider, criteria=cfg.params.get("criteria", ""))
+        return LLMJudge(provider=judge_provider, criteria=cfg.params.get("criteria", ""),
+                        language=cfg.params.get("language", "en"))
     raise ValueError(f"Unknown scorer type: {cfg.type}")

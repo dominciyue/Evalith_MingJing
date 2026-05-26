@@ -27,3 +27,18 @@ def test_llm_judge_handles_garbage():
     score = judge.score(TestCase(id="1", input="q"), "answer")
     assert score.passed is False
     assert score.value == 0.0
+
+
+def test_llm_judge_chinese_prompt_and_parse():
+    from mingjing.scorers.llm_judge import JUDGE_PROMPTS
+    assert "zh" in JUDGE_PROMPTS and "请" in JUDGE_PROMPTS["zh"]
+    judge = LLMJudge(
+        provider=FakeProvider(default='{"score": 1.0, "pass": true, "reason": "对"}'),
+        criteria="准确性", language="zh",
+    )
+    score = judge.score(TestCase(id="1", input="x"), "y")
+    assert score.passed is True and score.value == 1.0 and score.detail == "对"
+
+
+def test_llm_judge_defaults_to_english():
+    assert LLMJudge(provider=None).language == "en"

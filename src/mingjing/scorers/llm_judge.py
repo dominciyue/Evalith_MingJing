@@ -4,7 +4,8 @@ import json
 
 from ..models import Score, TestCase
 
-JUDGE_PROMPT = """You are grading an AI answer.
+JUDGE_PROMPTS = {
+    "en": """You are grading an AI answer.
 
 Question/Input:
 {input}
@@ -16,7 +17,21 @@ Criteria: {criteria}
 
 Respond with ONLY a JSON object:
 {{"score": <float 0..1>, "pass": <true|false>, "reason": "<short reason>"}}
-"""
+""",
+    "zh": """你是一名严格的 AI 答案评审。
+
+问题/输入:
+{input}
+
+AI 的回答:
+{output}
+
+评判标准: {criteria}
+
+请只输出一个 JSON 对象,不要任何其它文字:
+{{"score": <0到1之间的小数>, "pass": <true 或 false>, "reason": "<简短理由>"}}
+""",
+}
 
 
 def _extract_json(text: str) -> str:
@@ -30,12 +45,13 @@ def _extract_json(text: str) -> str:
 class LLMJudge:
     name = "llm_judge"
 
-    def __init__(self, provider, criteria: str = ""):
+    def __init__(self, provider, criteria: str = "", language: str = "en"):
         self.provider = provider
         self.criteria = criteria
+        self.language = language if language in JUDGE_PROMPTS else "en"
 
     def score(self, case: TestCase, output: str) -> Score:
-        prompt = JUDGE_PROMPT.format(
+        prompt = JUDGE_PROMPTS[self.language].format(
             input=case.input, output=output, criteria=self.criteria or "overall quality"
         )
         resp = self.provider.complete(prompt, temperature=0.0)
