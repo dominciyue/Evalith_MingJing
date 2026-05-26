@@ -66,3 +66,34 @@ def test_diff_fail_on_regression(tmp_path):
     assert ok.exit_code == 0  # no flag -> never fails
     gated = runner.invoke(app, ["diff", "base", "bad", "--store", s, "--fail-on-regression"])
     assert gated.exit_code == 1
+
+
+def test_run_out_writes_run_file(tmp_path):
+    from evalith.models import Run
+    cfg = _cfg(tmp_path, "hello", "hello")
+    out = tmp_path / "run.json"
+    res = runner.invoke(app, ["run", str(cfg), "--store", str(tmp_path / "d"), "--out", str(out)])
+    assert res.exit_code == 0
+    assert out.exists()
+    run = Run.model_validate_json(out.read_text(encoding="utf-8"))
+    assert run.results and run.results[0].case_id == "1"
+
+
+def test_diff_accepts_file_paths(tmp_path):
+    # CI baseline pattern: diff a committed baseline file against a fresh run file, no store needed
+    from datetime import datetime, timezone
+
+    from evalith.models import CaseResult, Run, Score
+
+    def mk(rid, val):
+        return Run(id=rid, name="t", created_at=datetime(2026, 5, 27, tzinfo=timezone.utc),
+                   model="echo",
+                   results=[CaseResult(case_id="1", input="i", output="o",
+                                       scores=[Score(scorer="s", value=val, passed=val >= 0.5)])])
+    base = tmp_path / "base.json"
+    base.write_text(mk("base", 1.0).model_dump_json(), encoding="utf-8")
+    new = tmp_path / "new.json"
+    new.write_text(mk("new", 0.0).model_dump_json(), encoding="utf-8")
+    res = runner.invoke(app, ["diff", str(base), str(new), "--fail-on-regression"])
+    assert res.exit_code == 1
+    assert "regressed" in res.stdout.lower()   # gated for the right reason, not a load crash

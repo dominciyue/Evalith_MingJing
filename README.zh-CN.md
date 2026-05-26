@@ -76,6 +76,15 @@ jobs:
 
 (可用的离线示例见 `.github/workflows/eval-example.yml`。)
 
+**相对基线拦回归。** `diff` 既接受 run ID,也接受 `.json` 文件路径,所以 CI 无需共享状态——先生成一份基线并提交,之后每个 PR 用新跑的结果跟它比:
+
+```bash
+evalith run examples/eval.yaml --out baseline.json   # 生成一次基线,提交 baseline.json
+# 然后在 CI 的 PR 上:
+evalith run examples/eval.yaml --out current.json
+evalith diff baseline.json current.json --fail-on-regression
+```
+
 ## 可分享的报告
 
 把一次 run 或一次 diff 导出为 Markdown(贴到 PR)或自包含的 HTML 页面:

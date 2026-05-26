@@ -13,16 +13,29 @@ from .store import RunStore
 app = typer.Typer(help="明镜 / Evalith — AI regression testing")
 
 
+def _load_run(store: str, ref: str):
+    """Load a run by store id, or directly from a .json file path (for CI baselines)."""
+    p = Path(ref)
+    if p.is_file():
+        from .models import Run
+        return Run.model_validate_json(p.read_text(encoding="utf-8"))
+    return RunStore(store).load(ref)
+
+
 @app.command()
 def run(config: str, store: str = ".evalith",
         concurrency: int = typer.Option(None, "--concurrency",
             help="Parallel provider calls (default: from config, else 1)."),
         fail_under: float = typer.Option(None, "--fail-under",
-            help="Exit 1 if the pass rate is below this threshold (0..1).")) -> None:
+            help="Exit 1 if the pass rate is below this threshold (0..1)."),
+        out: str = typer.Option(None, "--out",
+            help="Also write the run JSON to this path (handy as a CI baseline).")) -> None:
     """Run an eval defined by CONFIG and save the resulting run."""
     cfg = load_config(config)
     result = run_eval(cfg, get_provider(cfg.model), concurrency=concurrency)
     path = RunStore(store).save(result)
+    if out:
+        Path(out).write_text(result.model_dump_json(indent=2), encoding="utf-8")
     passed = sum(1 for r in result.results for s in r.scores if s.passed)
     total = sum(len(r.scores) for r in result.results)
     errors = sum(1 for r in result.results for s in r.scores if s.scorer == "error")
@@ -44,8 +57,7 @@ def diff(before: str, after: str, store: str = ".evalith",
     """Compare two runs and show which cases improved or regressed."""
     if fmt not in {"text", "md", "html"}:
         raise typer.BadParameter("format must be 'text', 'md', or 'html'")
-    s = RunStore(store)
-    report = diff_runs(s.load(before), s.load(after))
+    report = diff_runs(_load_run(store, before), _load_run(store, after))
     if fmt in {"md", "html"}:
         from .report import diff_to_html, diff_to_markdown
         text = (diff_to_html(report, before, after) if fmt == "html"

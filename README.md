@@ -77,6 +77,15 @@ jobs:
 
 (See `.github/workflows/eval-example.yml` for a working copy using the offline demo.)
 
+**Catch regressions vs a baseline.** `diff` accepts run IDs *or* `.json` file paths, so CI needs no shared state — bless a baseline once, commit it, then compare each PR's fresh run against it:
+
+```bash
+evalith run examples/eval.yaml --out baseline.json   # bless once, commit baseline.json
+# then, in CI on a PR:
+evalith run examples/eval.yaml --out current.json
+evalith diff baseline.json current.json --fail-on-regression
+```
+
 ## Shareable reports
 
 Turn a run or a diff into Markdown (for PR comments) or a self-contained HTML page:
