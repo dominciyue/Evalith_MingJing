@@ -15,11 +15,13 @@ app = typer.Typer(help="明镜 / Evalith — AI regression testing")
 
 @app.command()
 def run(config: str, store: str = ".mingjing",
+        concurrency: int = typer.Option(None, "--concurrency",
+            help="Parallel provider calls (default: from config, else 1)."),
         fail_under: float = typer.Option(None, "--fail-under",
             help="Exit 1 if the pass rate is below this threshold (0..1).")) -> None:
     """Run an eval defined by CONFIG and save the resulting run."""
     cfg = load_config(config)
-    result = run_eval(cfg, get_provider(cfg.model))
+    result = run_eval(cfg, get_provider(cfg.model), concurrency=concurrency)
     path = RunStore(store).save(result)
     passed = sum(1 for r in result.results for s in r.scores if s.passed)
     total = sum(len(r.scores) for r in result.results)

@@ -18,6 +18,7 @@ class EvalConfig(BaseModel):
     prompt_template: str = "{{input}}"
     system: str | None = None
     temperature: float = 0.0
+    concurrency: int = 1
     scorers: list[ScorerConfig] = Field(default_factory=list)
 
 

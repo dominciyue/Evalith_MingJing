@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 from .config import EvalConfig
@@ -15,26 +16,28 @@ def _render(template: str, case_input: str) -> str:
 
 
 def run_eval(config: EvalConfig, provider: Provider,
-             judge_provider: Provider | None = None) -> Run:
+             judge_provider: Provider | None = None,
+             concurrency: int | None = None) -> Run:
     dataset = load_dataset(config.dataset)
     scorers = [build_scorer(s, judge_provider=judge_provider or provider)
                for s in config.scorers]
-    results: list[CaseResult] = []
-    for case in dataset.cases:
+    workers = max(1, concurrency if concurrency is not None else config.concurrency)
+
+    def _eval_case(case) -> CaseResult:
         prompt = _render(config.prompt_template, case.input)
         resp = provider.complete(prompt, system=config.system, temperature=config.temperature)
         scores = [scorer.score(case, resp.text) for scorer in scorers]
-        results.append(
-            CaseResult(case_id=case.id, input=case.input, output=resp.text,
-                       scores=scores, latency_ms=resp.latency_ms,
-                       prompt_tokens=resp.prompt_tokens, completion_tokens=resp.completion_tokens,
-                       total_tokens=resp.total_tokens, cost_usd=resp.cost_usd)
-        )
-    return Run(
-        id=uuid.uuid4().hex[:12],
-        name=config.name,
-        created_at=datetime.now(timezone.utc),
-        model=config.model,
-        results=results,
-        config=config.model_dump(),
-    )
+        return CaseResult(case_id=case.id, input=case.input, output=resp.text,
+                          scores=scores, latency_ms=resp.latency_ms,
+                          prompt_tokens=resp.prompt_tokens, completion_tokens=resp.completion_tokens,
+                          total_tokens=resp.total_tokens, cost_usd=resp.cost_usd)
+
+    if workers == 1:
+        results = [_eval_case(c) for c in dataset.cases]
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            results = list(ex.map(_eval_case, dataset.cases))  # map preserves input order
+
+    return Run(id=uuid.uuid4().hex[:12], name=config.name,
+               created_at=datetime.now(timezone.utc), model=config.model,
+               results=results, config=config.model_dump())

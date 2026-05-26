@@ -31,3 +31,14 @@ def test_run_eval_renders_template(tmp_path):
 
     run = run_eval(cfg, EchoProvider())
     assert run.results[0].output == "Hello world"
+
+
+def test_run_eval_concurrent_preserves_order(tmp_path):
+    ds = tmp_path / "ds.yaml"
+    cases = "".join(f"  - id: '{i}'\n    input: q{i}\n" for i in range(20))
+    ds.write_text(f"name: d\ncases:\n{cases}", encoding="utf-8")
+    cfg = EvalConfig(name="t", dataset=str(ds), model="echo", prompt_template="{{input}}",
+                     scorers=[ScorerConfig(type="contains", params={"text": "q"})])
+    run = run_eval(cfg, FakeProvider(default="q-default"), concurrency=8)
+    assert [r.case_id for r in run.results] == [str(i) for i in range(20)]
+    assert len(run.results) == 20
