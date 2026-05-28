@@ -44,6 +44,35 @@ def test_run_eval_concurrent_preserves_order(tmp_path):
     assert len(run.results) == 20
 
 
+def test_run_eval_with_samples_records_per_trial_pass_rates(tmp_path):
+    """samples=N -> each CaseResult.pass_rate_samples has N values, one per trial."""
+    from evalith.providers.base import Response
+
+    class FlipProvider:
+        """Alternates between matching and missing the expected text."""
+        model = "flip"
+
+        def __init__(self):
+            self.calls = 0
+
+        def complete(self, prompt, *, system=None, temperature=0.0):
+            self.calls += 1
+            text = "ok" if self.calls % 2 == 1 else "miss"
+            return Response(text=text)
+
+    ds = tmp_path / "ds.yaml"
+    ds.write_text("name: d\ncases:\n  - id: c1\n    input: hi\n", encoding="utf-8")
+    cfg = EvalConfig(name="t", dataset=str(ds), model="flip", prompt_template="{{input}}",
+                     scorers=[ScorerConfig(type="contains", params={"text": "ok"})],
+                     samples=4)
+    run = run_eval(cfg, FlipProvider())
+    assert len(run.results) == 1                              # one case, still one result
+    cr = run.results[0]
+    assert len(cr.pass_rate_samples) == 4                     # one pass-rate per trial
+    # alternating ok/miss -> 1,0,1,0 -> mean 0.5
+    assert cr.pass_rate_samples == [1.0, 0.0, 1.0, 0.0]
+
+
 def test_run_eval_survives_provider_error(tmp_path):
     from evalith.providers.base import Response
 

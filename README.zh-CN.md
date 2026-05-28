@@ -85,6 +85,21 @@ evalith run examples/eval.yaml --out current.json
 evalith diff baseline.json current.json --fail-on-regression
 ```
 
+## 抗 LLM 噪声: 多次采样
+
+LLM 同一 prompt 跑两次结果可能不同(即便 temperature=0 有些 provider 也会抖)。
+为避免把随机噪声判成回退,可以让每条用例跑多次,Evalith 会对 Δ 做 bootstrap
+95% 置信区间:
+
+```bash
+evalith run examples/eval.yaml --samples 5 --out current.json
+evalith diff baseline.json current.json --fail-on-regression
+# -> 只有当 (after - before) 的 95% 置信区间整体 < 0,才判为 regressed
+```
+
+单样本运行(`--samples 1`,默认)行为与之前完全一致。一旦启用采样,diff 报告会
+多出一列 `Δ 95% CI`。
+
 ## 可分享的报告
 
 把一次 run 或一次 diff 导出为 Markdown(贴到 PR)或自包含的 HTML 页面:
@@ -133,7 +148,8 @@ API key。`llm_judge` 评分器可用 `params: {language: zh}` 进行中文评�
 
 ## 状态
 
-v0.3 —— 单轮 prompt 评测、基于文件的运行存储、带逐用例输出对比的运行间 diff、CI 设卡
+v0.4 —— 单轮 prompt 评测、基于文件的运行存储、带逐用例输出对比**和 Δ 上的 bootstrap
+95% 置信区间(`--samples N`,让 LLM 噪声不再被误判为回退)**的运行间 diff、CI 设卡
 (`--fail-under`、`--fail-on-regression`、文件基线、GitHub Action)、Markdown/HTML 报告、
 带逐用例容错的并发、成本/token/延迟统计,以及带中文评审的国产模型别名。团队/云端能力在路线图上。
 欢迎提 Issue 和 PR。

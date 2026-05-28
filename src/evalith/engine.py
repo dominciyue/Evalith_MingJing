@@ -23,7 +23,9 @@ def run_eval(config: EvalConfig, provider: Provider,
                for s in config.scorers]
     workers = max(1, concurrency if concurrency is not None else config.concurrency)
 
-    def _eval_case(case) -> CaseResult:
+    samples = max(1, config.samples)
+
+    def _eval_once(case) -> CaseResult:
         try:
             prompt = _render(config.prompt_template, case.input)
             resp = provider.complete(prompt, system=config.system, temperature=config.temperature)
@@ -36,6 +38,24 @@ def run_eval(config: EvalConfig, provider: Provider,
             return CaseResult(case_id=case.id, input=case.input, output="",
                               scores=[Score(scorer="error", value=0.0, passed=False,
                                             detail=f"{type(e).__name__}: {e}")])
+
+    def _trial_pass_rate(cr: CaseResult) -> float:
+        return sum(1 for s in cr.scores if s.passed) / len(cr.scores) if cr.scores else 0.0
+
+    def _eval_case(case) -> CaseResult:
+        if samples == 1:
+            return _eval_once(case)
+        trials = [_eval_once(case) for _ in range(samples)]
+        rep = trials[0]  # representative trial for output/scores; aggregate the rest
+        return CaseResult(
+            case_id=rep.case_id, input=rep.input, output=rep.output, scores=rep.scores,
+            latency_ms=sum(t.latency_ms for t in trials) / samples,
+            prompt_tokens=sum(t.prompt_tokens for t in trials),
+            completion_tokens=sum(t.completion_tokens for t in trials),
+            total_tokens=sum(t.total_tokens for t in trials),
+            cost_usd=sum(t.cost_usd for t in trials),
+            pass_rate_samples=[_trial_pass_rate(t) for t in trials],
+        )
 
     if workers == 1:
         results = [_eval_case(c) for c in dataset.cases]

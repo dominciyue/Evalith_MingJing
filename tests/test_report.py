@@ -69,6 +69,43 @@ def test_diff_html_shows_regressed_outputs():
     assert "GOODOUT" in html and "BADOUT" in html
 
 
+def _sampled_diff(before_samples, after_samples):
+    """Build a diff between two runs whose case carries explicit pass_rate_samples (triggers bootstrap)."""
+    from evalith.diff import diff_runs
+
+    def mk(rid, samples):
+        mean = sum(samples) / len(samples)
+        return Run(id=rid, name="d", created_at=datetime(2026, 5, 28, tzinfo=timezone.utc),
+                   model="m", results=[CaseResult(
+                       case_id="c1", input="q", output="o",
+                       scores=[Score(scorer="s", value=mean, passed=mean >= 0.5)],
+                       pass_rate_samples=samples)])
+    return diff_runs(mk("a", before_samples), mk("b", after_samples))
+
+
+def test_diff_markdown_shows_ci_column_when_bootstrapped():
+    from evalith.report import diff_to_markdown
+    report = _sampled_diff([1.0] * 6, [0.0] * 6)   # clean regression — CI fully below 0
+    md = diff_to_markdown(report, "a", "b")
+    assert "Δ 95% CI" in md                         # new column header surfaces the CI
+    # CI numbers themselves appear (Δ should be near -1.0)
+    assert "-1.00" in md or "-0.99" in md or "-1.0" in md
+
+
+def test_diff_html_shows_ci_column_when_bootstrapped():
+    from evalith.report import diff_to_html
+    report = _sampled_diff([1.0] * 6, [0.0] * 6)
+    html = diff_to_html(report, "a", "b")
+    assert "95% CI" in html
+
+
+def test_diff_markdown_no_ci_column_for_single_sample_runs():
+    """Backward-compat: legacy single-sample diffs must NOT add a CI column."""
+    from evalith.report import diff_to_markdown
+    md = diff_to_markdown(_diff_pair("x", "y"), "a", "b")
+    assert "Δ 95% CI" not in md                     # quiet for samples=1 runs
+
+
 def test_markdown_escapes_pipes_in_output():
     from evalith.report import run_to_markdown
     run = Run(id="z", name="n", created_at=datetime(2026, 5, 26, tzinfo=timezone.utc), model="m",

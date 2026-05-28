@@ -86,6 +86,18 @@ evalith run examples/eval.yaml --out current.json
 evalith diff baseline.json current.json --fail-on-regression
 ```
 
+## Tame LLM noise with sampling
+
+LLM outputs can drift between calls (even at temperature 0 with some providers). To stop random noise from looking like a regression, run each case multiple times and let Evalith bootstrap a 95% confidence interval on Δ:
+
+```bash
+evalith run examples/eval.yaml --samples 5 --out current.json
+evalith diff baseline.json current.json --fail-on-regression
+# -> a case is only flagged "regressed" when the 95% CI on (after − before) is fully below zero
+```
+
+Single-shot runs (`--samples 1`, the default) behave exactly as before. The diff report adds a `Δ 95% CI` column when sampling was used.
+
 ## Shareable reports
 
 Turn a run or a diff into Markdown (for PR comments) or a self-contained HTML page:
@@ -137,11 +149,13 @@ every case's output, scores, tokens, cost, and latency — to `.evalith/runs/`.
 
 ## Status
 
-v0.3 — single-turn prompt evaluation, file-based run store, run-to-run diff with
-per-case output comparison, CI gating (`--fail-under`, `--fail-on-regression`,
-file-based baselines, GitHub Action), Markdown/HTML reports, concurrency with
-per-case error isolation, cost/token/latency tracking, and 国产 model aliases
-with a Chinese judge. Team/cloud features are on the roadmap. Issues and PRs welcome.
+v0.4 — single-turn prompt evaluation, file-based run store, run-to-run diff with
+per-case output comparison **and bootstrap 95% CI on Δ (`--samples N`) so LLM
+noise can't masquerade as a regression**, CI gating (`--fail-under`,
+`--fail-on-regression`, file-based baselines, GitHub Action), Markdown/HTML
+reports, concurrency with per-case error isolation, cost/token/latency tracking,
+and 国产 model aliases with a Chinese judge. Team/cloud features are on the
+roadmap. Issues and PRs welcome.
 
 ## License
 

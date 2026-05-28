@@ -69,18 +69,31 @@ def run_to_html(run: Run) -> str:
 
 def diff_to_markdown(report: DiffReport, before_id: str, after_id: str) -> str:
     s = report.summary()
+    has_ci = any(c.ci is not None for c in report.cases)
     lines = [
         f"# Diff {before_id} → {after_id}",
         "",
         "  ·  ".join(f"**{k}:** {v}" for k, v in s.items()),
         "",
-        "| case | status | before | after |",
-        "| --- | --- | --- | --- |",
     ]
+    if has_ci:
+        lines += [
+            "| case | status | before | after | Δ 95% CI |",
+            "| --- | --- | --- | --- | --- |",
+        ]
+    else:
+        lines += [
+            "| case | status | before | after |",
+            "| --- | --- | --- | --- |",
+        ]
     for c in report.cases:
         b = "—" if c.before is None else f"{c.before:.2f}"
         a = "—" if c.after is None else f"{c.after:.2f}"
-        lines.append(f"| {_md(c.case_id)} | {_md(c.status)} | {b} | {a} |")
+        if has_ci:
+            ci = "—" if c.ci is None else f"[{c.ci[0]:+.2f}, {c.ci[1]:+.2f}]"
+            lines.append(f"| {_md(c.case_id)} | {_md(c.status)} | {b} | {a} | {ci} |")
+        else:
+            lines.append(f"| {_md(c.case_id)} | {_md(c.status)} | {b} | {a} |")
     if report.regressed:
         lines += ["", "## Regressed case outputs", ""]
         for c in report.regressed:
@@ -94,13 +107,18 @@ def diff_to_markdown(report: DiffReport, before_id: str, after_id: str) -> str:
 
 
 def diff_to_html(report: DiffReport, before_id: str, after_id: str) -> str:
+    has_ci = any(c.ci is not None for c in report.cases)
     rows = ""
     for c in report.cases:
         b = "—" if c.before is None else f"{c.before:.2f}"
         a = "—" if c.after is None else f"{c.after:.2f}"
         cls = c.status if c.status in {"regressed", "improved"} else ""
+        ci_cell = ""
+        if has_ci:
+            ci = "—" if c.ci is None else f"[{c.ci[0]:+.2f}, {c.ci[1]:+.2f}]"
+            ci_cell = f"<td>{ci}</td>"
         rows += (f"<tr class='{cls}'><td>{escape(c.case_id)}</td><td>{escape(c.status)}</td>"
-                 f"<td>{b}</td><td>{a}</td></tr>")
+                 f"<td>{b}</td><td>{a}</td>{ci_cell}</tr>")
     summary = " · ".join(f"{k}: {v}" for k, v in report.summary().items())
     detail = ""
     if report.regressed:
@@ -110,8 +128,9 @@ def diff_to_html(report: DiffReport, before_id: str, after_id: str) -> str:
                       f"<p><b>before:</b> {escape(_truncate(c.before_output or '', 300))}</p>"
                       f"<p><b>after:</b> {escape(_truncate(c.after_output or '', 300))}</p>")
         detail = f"<h2>Regressed case outputs</h2>{items}"
+    ci_header = "<th>Δ 95% CI</th>" if has_ci else ""
     body = (f"<h1>Diff {escape(before_id)} → {escape(after_id)}</h1>"
             f"<p class='meta'>{escape(summary)}</p>"
-            f"<table><tr><th>case</th><th>status</th><th>before</th><th>after</th></tr>"
+            f"<table><tr><th>case</th><th>status</th><th>before</th><th>after</th>{ci_header}</tr>"
             f"{rows}</table>{detail}")
     return _HTML_SHELL.format(title=f"Diff {escape(before_id)}→{escape(after_id)}", body=body)

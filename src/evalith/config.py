@@ -19,6 +19,7 @@ class EvalConfig(BaseModel):
     system: str | None = None
     temperature: float = 0.0
     concurrency: int = 1
+    samples: int = 1  # run each case N times to measure LLM noise (>=2 enables bootstrap CI)
     scorers: list[ScorerConfig] = Field(default_factory=list)
 
 

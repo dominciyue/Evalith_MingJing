@@ -35,9 +35,12 @@ class CaseResult(BaseModel):
     completion_tokens: int = 0
     total_tokens: int = 0
     cost_usd: float = 0.0
+    pass_rate_samples: list[float] = Field(default_factory=list)  # one per trial when samples>1
 
     @property
     def mean_score(self) -> float:
+        if self.pass_rate_samples:
+            return sum(self.pass_rate_samples) / len(self.pass_rate_samples)
         return sum(s.value for s in self.scores) / len(self.scores) if self.scores else 0.0
 
 

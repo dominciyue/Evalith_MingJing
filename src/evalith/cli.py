@@ -26,12 +26,16 @@ def _load_run(store: str, ref: str):
 def run(config: str, store: str = ".evalith",
         concurrency: int = typer.Option(None, "--concurrency",
             help="Parallel provider calls (default: from config, else 1)."),
+        samples: int = typer.Option(None, "--samples",
+            help="Run each case N times to measure LLM noise (N>=2 enables bootstrap CI in diff)."),
         fail_under: float = typer.Option(None, "--fail-under",
             help="Exit 1 if the pass rate is below this threshold (0..1)."),
         out: str = typer.Option(None, "--out",
             help="Also write the run JSON to this path (handy as a CI baseline).")) -> None:
     """Run an eval defined by CONFIG and save the resulting run."""
     cfg = load_config(config)
+    if samples is not None:
+        cfg = cfg.model_copy(update={"samples": samples})
     result = run_eval(cfg, get_provider(cfg.model), concurrency=concurrency)
     path = RunStore(store).save(result)
     if out:
@@ -72,7 +76,8 @@ def diff(before: str, after: str, store: str = ".evalith",
         for c in report.cases:
             before_s = "-" if c.before is None else f"{c.before:.2f}"
             after_s = "-" if c.after is None else f"{c.after:.2f}"
-            typer.echo(f"  {c.case_id:<16} {c.status:<10} {before_s:>6} -> {after_s:>6}")
+            ci_s = "" if c.ci is None else f"  Δ 95% CI [{c.ci[0]:+.2f}, {c.ci[1]:+.2f}]"
+            typer.echo(f"  {c.case_id:<16} {c.status:<10} {before_s:>6} -> {after_s:>6}{ci_s}")
         typer.echo(str(report.summary()))
     if fail_on_regression and report.regressed:
         typer.echo(f"FAIL: {len(report.regressed)} case(s) regressed")
