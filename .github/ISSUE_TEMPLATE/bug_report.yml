@@ -1,0 +1,49 @@
+name: Bug report
+description: Something in Evalith doesn't work as documented
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear, minimal description of the bug.
+      placeholder: "`evalith run examples/eval.yaml --samples 5` crashes with ..."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: Minimum commands / config to reproduce. Paste the config if possible.
+      render: shell
+      placeholder: |
+        pip install evalith==0.4.0
+        evalith run my-eval.yaml --samples 5
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Evalith version
+      description: Output of `evalith --version` or `pip show evalith`.
+      placeholder: "0.4.0"
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Python / OS
+      placeholder: "Python 3.11 on Ubuntu 22.04"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / traceback
+      render: shell

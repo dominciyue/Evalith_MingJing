@@ -2,6 +2,12 @@
 
 **English** | [中文](README.zh-CN.md)
 
+[![PyPI](https://img.shields.io/pypi/v/evalith.svg)](https://pypi.org/project/evalith/)
+[![Python](https://img.shields.io/pypi/pyversions/evalith.svg)](https://pypi.org/project/evalith/)
+[![CI](https://github.com/dominciyue/Evalith_MingJing/actions/workflows/ci.yml/badge.svg)](https://github.com/dominciyue/Evalith_MingJing/actions/workflows/ci.yml)
+[![License](https://img.shields.io/pypi/l/evalith.svg)](https://github.com/dominciyue/Evalith_MingJing/blob/main/LICENSE)
+[![Downloads](https://static.pepy.tech/badge/evalith)](https://pepy.tech/project/evalith)
+
 > Catch AI regressions before your users do.
 
 A neutral, local-first **AI regression-testing** tool. Define a test set, run it
@@ -156,6 +162,11 @@ noise can't masquerade as a regression**, CI gating (`--fail-under`,
 reports, concurrency with per-case error isolation, cost/token/latency tracking,
 and 国产 model aliases with a Chinese judge. Team/cloud features are on the
 roadmap. Issues and PRs welcome.
+
+## Read more
+
+- **Deep dive (Chinese):** [AI 回归测试需要统计显著性: 用 bootstrap CI 抗 LLM 噪声](https://zhuanlan.zhihu.com/p/2043351926964848178) — why point-to-point eval diffs are statistically wrong, the math behind Evalith's `--samples N`, and a reproducible DeepSeek A/B experiment.
+- **Design docs & TDD plans:** [`docs/`](docs/) — v0.1 spec, v0.1/v0.2 task-by-task plans, and the blog source.
 
 ## License
 

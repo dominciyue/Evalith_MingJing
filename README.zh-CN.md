@@ -2,6 +2,12 @@
 
 [English](README.md) | **中文**
 
+[![PyPI](https://img.shields.io/pypi/v/evalith.svg)](https://pypi.org/project/evalith/)
+[![Python](https://img.shields.io/pypi/pyversions/evalith.svg)](https://pypi.org/project/evalith/)
+[![CI](https://github.com/dominciyue/Evalith_MingJing/actions/workflows/ci.yml/badge.svg)](https://github.com/dominciyue/Evalith_MingJing/actions/workflows/ci.yml)
+[![License](https://img.shields.io/pypi/l/evalith.svg)](https://github.com/dominciyue/Evalith_MingJing/blob/main/LICENSE)
+[![Downloads](https://static.pepy.tech/badge/evalith)](https://pepy.tech/project/evalith)
+
 > 在用户发现之前,先抓住 AI 的质量回退(regression)。
 
 一个**中立、本地优先**的 **AI 回归测试**工具。定义一个测试集,针对任意模型
@@ -153,6 +159,11 @@ v0.4 —— 单轮 prompt 评测、基于文件的运行存储、带逐用例输
 (`--fail-under`、`--fail-on-regression`、文件基线、GitHub Action)、Markdown/HTML 报告、
 带逐用例容错的并发、成本/token/延迟统计,以及带中文评审的国产模型别名。团队/云端能力在路线图上。
 欢迎提 Issue 和 PR。
+
+## 深入阅读
+
+- **技术深度文(中文):** [AI 回归测试需要统计显著性: 用 bootstrap CI 抗 LLM 噪声](https://zhuanlan.zhihu.com/p/2043351926964848178) —— 为什么点对点比较的 eval CI gate 在统计上就是错的、Evalith `--samples N` 背后的数学,以及一组可复现的 DeepSeek A/B 实验。
+- **设计文档与 TDD 计划:** [`docs/`](docs/) —— v0.1 spec、v0.1/v0.2 任务级 plan,以及博客原文。
 
 ## 许可证
 

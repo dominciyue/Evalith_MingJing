@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Read the docs first
+    url: https://github.com/dominciyue/Evalith_MingJing#readme
+    about: Most usage questions are answered by the README and docs/.
+  - name: Deep-dive article (Chinese)
+    url: https://zhuanlan.zhihu.com/p/2043351926964848178
+    about: How bootstrap CI works in Evalith — read before asking about --samples / diff behavior.
