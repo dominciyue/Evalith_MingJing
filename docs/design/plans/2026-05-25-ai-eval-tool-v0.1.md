@@ -1406,7 +1406,7 @@ git commit -m "docs: add README quickstart"
 
 ## Self-Review (completed)
 
-**1. Spec coverage** (against `docs/superpowers/specs/2026-05-25-ai-eval-regression-tool-design.md` §5.1):
+**1. Spec coverage** (against `docs/design/specs/2026-05-25-ai-eval-regression-tool-design.md` §5.1):
 - ✅ Define test set (incl. import from file): Task 4 (`load_dataset` yaml/json/csv).
 - ✅ Run eval; rule assertions + LLM-judge + model access (国产+海外): Tasks 5–8.
 - ✅ Killer feature — version compare / regression: Task 10 (`diff_runs`) + Task 11 (`mingjing diff`).
