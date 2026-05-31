@@ -1,0 +1,36 @@
+name: qa-high-temp
+# 10 mid-depth open-ended technical questions. Each answer is judged purely by
+# llm_judge against an expected-concepts checklist — no `contains` scorer, so
+# scoring is fully judge-driven (the article's whole point is that both layers
+# of noise — model output + judge verdict — are now in play).
+cases:
+  - id: explain-rlhf
+    input: "用 4-6 句话解释 RLHF(从人类反馈中强化学习)是什么、为什么需要它,以及典型流程的主要环节。"
+    expected_concepts: ["监督微调 SFT", "奖励模型 reward model", "PPO 或 DPO 优化", "对齐 alignment 目标"]
+  - id: explain-vector-db
+    input: "用 4-6 句话说明向量数据库与传统关系型数据库的核心区别,以及在 LLM 应用栈里的典型作用。"
+    expected_concepts: ["embedding 向量表示", "近似最近邻 ANN", "相似度搜索", "索引结构 HNSW 或 IVF"]
+  - id: sql-injection-vulnerability
+    input: "下列伪代码 `db.query(\"SELECT * FROM users WHERE name = '\" + name + \"'\")` 在什么情况下不安全?该如何修?用 4-6 句话回答。"
+    expected_concepts: ["未参数化的用户输入拼接", "参数化查询 prepared statement", "ORM 或绑定变量替代字符串拼接", "转义不可靠"]
+  - id: k8s-configmap-vs-secret
+    input: "Kubernetes 的 ConfigMap 和 Secret 区别是什么,选择哪一个的依据是什么?用 4-6 句话说明。"
+    expected_concepts: ["ConfigMap 存非敏感配置", "Secret 存敏感数据(默认 base64)", "etcd 中 Secret 默认未真正加密", "RBAC 限制访问"]
+  - id: asyncio-yield-deadlock
+    input: "在 Python asyncio 协程中调用 `time.sleep(1)` 会发生什么?为什么不能这样写?用 4-6 句话说明。"
+    expected_concepts: ["阻塞事件循环", "同步阻塞 vs 协程 await", "应改用 await asyncio.sleep", "并发被破坏"]
+  - id: python-gil-tradeoffs
+    input: "用 4-6 句话说明 Python 的 GIL 是什么、它对 CPU 密集型多线程任务的影响,以及常见绕开方式。"
+    expected_concepts: ["全局解释器锁", "保证字节码操作原子性", "多线程 CPU 任务无法真正并行", "多进程或 C 扩展规避"]
+  - id: redis-cluster-failover
+    input: "Redis Cluster 中,一个主节点宕机后,从节点是如何被选举为新主、客户端流量是如何被重定向的?用 4-6 句话说明流程。"
+    expected_concepts: ["gossip 协议感知故障", "从节点投票/选举", "epoch 递增", "客户端槽位重定向 MOVED 或 ASK"]
+  - id: tcp-congestion-control
+    input: "TCP 拥塞控制中,慢启动和拥塞避免阶段的核心区别是什么?用 4-6 句话说明。"
+    expected_concepts: ["指数增长 cwnd", "线性增长 cwnd", "拥塞窗口 cwnd 概念", "阈值 ssthresh 切换"]
+  - id: jwt-vs-session
+    input: "JWT 与传统服务端 session 在认证上的核心权衡是什么?用 4-6 句话说明。"
+    expected_concepts: ["无状态 vs 有状态", "服务端存储成本", "撤销与失效难度", "横向扩展性"]
+  - id: transformer-attention
+    input: "Transformer 中的 self-attention 是怎么工作的?Q/K/V 各自的作用是什么?用 4-6 句话说明。"
+    expected_concepts: ["Query 向量", "Key 向量", "Value 向量", "softmax 归一化的注意力权重"]
