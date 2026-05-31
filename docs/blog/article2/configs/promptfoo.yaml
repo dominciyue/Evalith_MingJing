@@ -1,0 +1,44 @@
+description: Article 2 — promptfoo baseline (high-temp, llm-rubric judge)
+prompts:
+  - "{{input}}"
+providers:
+  - id: deepseek:deepseek-chat
+    config:
+      temperature: 1.0
+repeat: 5
+defaultTest:
+  assert:
+    - type: llm-rubric
+      provider: deepseek:deepseek-chat
+      value: "回答必须充分解释问题涉及的多个核心概念。如果回答过短(少于 80 字)或仅触及一个方面而忽略其它核心概念,给 score=0.0 且 pass=false。覆盖部分概念但解释不够给 score=0.3-0.5 且 pass=false。充分覆盖且解释清晰给 score=0.9-1.0 且 pass=true。"
+tests:
+  - vars:
+      input: "用 4-6 句话解释 RLHF(从人类反馈中强化学习)是什么、为什么需要它,以及典型流程的主要环节。"
+      _case_id: explain-rlhf
+  - vars:
+      input: "用 4-6 句话说明向量数据库与传统关系型数据库的核心区别,以及在 LLM 应用栈里的典型作用。"
+      _case_id: explain-vector-db
+  - vars:
+      input: "下列伪代码 `db.query(\"SELECT * FROM users WHERE name = '\" + name + \"'\")` 在什么情况下不安全?该如何修?用 4-6 句话回答。"
+      _case_id: sql-injection-vulnerability
+  - vars:
+      input: "Kubernetes 的 ConfigMap 和 Secret 区别是什么,选择哪一个的依据是什么?用 4-6 句话说明。"
+      _case_id: k8s-configmap-vs-secret
+  - vars:
+      input: "在 Python asyncio 协程中调用 `time.sleep(1)` 会发生什么?为什么不能这样写?用 4-6 句话说明。"
+      _case_id: asyncio-yield-deadlock
+  - vars:
+      input: "用 4-6 句话说明 Python 的 GIL 是什么、它对 CPU 密集型多线程任务的影响,以及常见绕开方式。"
+      _case_id: python-gil-tradeoffs
+  - vars:
+      input: "Redis Cluster 中,一个主节点宕机后,从节点是如何被选举为新主、客户端流量是如何被重定向的?用 4-6 句话说明流程。"
+      _case_id: redis-cluster-failover
+  - vars:
+      input: "TCP 拥塞控制中,慢启动和拥塞避免阶段的核心区别是什么?用 4-6 句话说明。"
+      _case_id: tcp-congestion-control
+  - vars:
+      input: "JWT 与传统服务端 session 在认证上的核心权衡是什么?用 4-6 句话说明。"
+      _case_id: jwt-vs-session
+  - vars:
+      input: "Transformer 中的 self-attention 是怎么工作的?Q/K/V 各自的作用是什么?用 4-6 句话说明。"
+      _case_id: transformer-attention
