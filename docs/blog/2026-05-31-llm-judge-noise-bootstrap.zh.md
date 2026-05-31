@@ -71,7 +71,70 @@ bootstrap CI 给出 [-0.80, +0.40],跨过 0,判 unchanged。这才是正确的�
 
 (下面的数据表来自实际跑出来的实验,任何一条都没有事后修正。所有 raw outputs 在 `docs/blog/article2/raw/`,一行命令可复现。)
 
-<TODO §4 table + post-data prose — Task 8>
+### 真实数据
+
+| case | A1 mean | B mean | bootstrap CI on Δ | status |
+|---|---|---|---|---|
+| `asyncio-yield-deadlock` | 1.00 | 0.60 | [-0.80, +0.00] | unchanged |
+| `explain-rlhf` | 1.00 | 1.00 | [+0.00, +0.00] | unchanged |
+| `explain-vector-db` | 1.00 | 0.60 | [-0.80, +0.00] | unchanged |
+| `jwt-vs-session` | 1.00 | 1.00 | [+0.00, +0.00] | unchanged |
+| `k8s-configmap-vs-secret` | 1.00 | 1.00 | [+0.00, +0.00] | unchanged |
+| `python-gil-tradeoffs` | 1.00 | 1.00 | [+0.00, +0.00] | unchanged |
+| `redis-cluster-failover` | 0.80 | 0.00 | [-1.00, -0.40] | regressed |
+| `sql-injection-vulnerability` | 1.00 | 0.40 | [-1.00, -0.20] | regressed |
+| `tcp-congestion-control` | 1.00 | 1.00 | [+0.00, +0.00] | unchanged |
+| `transformer-attention` | 1.00 | 1.00 | [+0.00, +0.00] | unchanged |
+
+Evalith bootstrap 确认回退(regressed):**`redis-cluster-failover`、`sql-injection-vulnerability`**,共 2/10。
+
+---
+
+### 假设 vs 现实:我几乎全猜错了
+
+我事先写下的假设,公开锁在 git commit `68d1db0`,几乎全错。
+
+**强预期(5 个)的命中情况:**
+
+- `explain-vector-db` — mean 从 1.00 跌至 0.60 ✓ 确实下滑,但 bootstrap CI 为 [-0.80, +0.00],刚好触碰 0,判 unchanged。统计保守一步,没报警。
+- `explain-rlhf` — mean 纹丝不动,1.00 → 1.00。❌ 完全没命中。
+- `python-gil-tradeoffs` — 同上,1.00 → 1.00。❌
+- `tcp-congestion-control` — 1.00 → 1.00。❌
+- `transformer-attention` — 1.00 → 1.00。❌
+
+强预期 5 个,bootstrap 确认回退的:0 个。就算放宽到"均值有下滑"也只有 1 个(`explain-vector-db`)。
+
+**边界 case(2 个):**
+
+`k8s-configmap-vs-secret` 和 `jwt-vs-session` 均纹丝不动,1.00 → 1.00。我预测"可能掉可能不掉",它们选择了不掉。
+
+**应该不被命中的(3 个)——反而 3/3 全被打中:**
+
+- `sql-injection-vulnerability` — mean 从 1.00 跌至 0.40,bootstrap 确认回退。❌ **假安全。**
+- `asyncio-yield-deadlock` — mean 从 1.00 跌至 0.60,CI 触碰 0,判 unchanged——但下滑是真实的。❌ **假安全。**
+- `redis-cluster-failover` — mean 从 0.80 跌至 0.00,5/5 全挂,bootstrap 确认回退,CI 完全在 0 以下。❌ **灾难性失手。**
+
+---
+
+### 为什么我的直觉是错的
+
+事后可以做合理化解释——但这正是要警惕的陷阱。解释放在这里,是为了说明"直觉错在哪",而不是为自己辩护。
+
+**`explain-rlhf` 为什么幸存:**"SFT → 奖励模型 → PPO"这三个词本身就是高频训练语料里的核心 token。即便 prompt 要求"跳过基础",模型在极度压缩输出时也会本能地保留这条主干,因为它们就是答案的骨架,不是铺垫。judge 看到 SFT/reward model/PPO 三个节点都在,照样给过。我的预测错在把"知道这个概念的读者觉得是基础"等同于"模型在压缩时会省掉它"——两者不是一回事。
+
+**`redis-cluster-failover` 为什么灾难性崩溃:**Failover 流程的每一个步骤都需要具体陈述——epoch 更新机制、gossip 协议广播时序、slot 重定向的 MOVED vs ASK 区别。这些步骤之间没有一个可以被"略去基础"这条指令优雅地省掉:每一步都是"非基础的",但省掉任何一步都会让回答不完整。实际 B 跑的输出只有 101 个字,把所有步骤压进三句话,judge 在"流程完整性"上给出全 0。这不是因为模型对 Redis 理解不够,而是"长度约束 + 多步骤流程"的组合必然导致截断。
+
+**`sql-injection-vulnerability` 和 `asyncio-yield-deadlock` 为什么被打中:**这两题都是"诊断 + 修复"双轨结构。`sql-injection` 的正确回答需要说清楚两件事:漏洞为何危险(字符串拼接让 SQL 元字符逃逸)和修复手段(参数化查询)。1-2 句话只够说"改成参数化查询",why-not 那一半被 prompt 的"concise"指令砍掉了——judge 在"解释漏洞成因"这个维度上扣分。`asyncio-yield-deadlock` 同理:正确答案不只是"`asyncio.sleep` 替代 `time.sleep`",还要说清楚 `time.sleep` 是同步阻塞不会让出事件循环控制权。B 跑的输出 146 字,这层 why 被压缩成一半,judge 扣了分。
+
+---
+
+### 这正是最重要的一点
+
+我事先写下的假设,公开锁在 git commit `68d1db0`,几乎全错。强预期命中的只有 0 个(放宽到"均值有下滑"也只有 1 个),应该不被命中的反而 3/3 全部出现下滑。**人对 LLM 行为的直觉本身就不可靠。**
+
+这不是谦虚,这是实测结论。我在这个领域浸泡了足够长时间,我对 10 个 case 的预测还是在关键方向上全错了。任何没有数据的"我感觉这个改动不影响质量"都应该被当成零信息处理。
+
+但 bootstrap CI 不需要我的预测才能工作,它只读数据。两个被确认回退的 case,bootstrap CI 全部在 0 以下,mean 分别降至 0.00 和 0.40,判定坚实。均值没动的 case(包括那些我强预期会命中的),bootstrap 照样给出 [+0.00, +0.00],一条都没有误报。这才是正确的评测行为:不问"我以为哪里会出问题",只问"数据说哪里出了问题"。
 
 ## 五、同台对照:promptfoo / DeepEval 跑同一套
 
