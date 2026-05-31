@@ -1,0 +1,277 @@
+{
+  "id": "464146d3400a",
+  "name": "high-temp-broken",
+  "created_at": "2026-05-31T11:56:58.856958Z",
+  "model": "deepseek-chat",
+  "results": [
+    {
+      "case_id": "explain-rlhf",
+      "input": "用 4-6 句话解释 RLHF(从人类反馈中强化学习)是什么、为什么需要它,以及典型流程的主要环节。",
+      "output": "RLHF 是一种将人类偏好信号融入语言模型训练的方法，核心是解决传统语言模型目标（如最大似然）与人类期望（如有用性、安全性）之间的错位。需要它的原因是光靠自回归训练会让模型生成流利但可能有害、虚假或偏离偏好的内容，而纯规则难以覆盖所有模糊的对齐维度。典型流程分三步：先基于 prompts 收集人类对比排序数据（比如哪个回答更好），用来训练一个奖励模型模拟人类偏好；然后用这个奖励模型给原始语言模型的采样结果打分，通过强化学习（如 PPO 算法）更新模型参数，让生成向高分方向偏移；最后常需迭代数据收集和微调，避免奖励模型过拟合导致模型“钻空子”输出表面高分但实际低质的内容。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答完整覆盖了RLHF的核心概念、必要性及典型流程的三个主要环节，解释清晰准确，无跑题或显著省略。"
+        }
+      ],
+      "latency_ms": 2848.1312145944685,
+      "prompt_tokens": 310,
+      "completion_tokens": 875,
+      "total_tokens": 1185,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "explain-vector-db",
+      "input": "用 4-6 句话说明向量数据库与传统关系型数据库的核心区别,以及在 LLM 应用栈里的典型作用。",
+      "output": "向量数据库的核心差异在于**索引结构**：关系库用 B+ 树等精确索引加速等值/范围查询，向量库用 HNSW、IVF 等近似最近邻（ANN）索引加速高维空间相似度搜索，以精度换速度。关系库严格遵循 ACID 和**行列范式**，天然不适合处理非结构化数据的语义距离计算；向量库则将数据编码为向量，用余弦或欧氏距离衡量“相关性”。在 LLM 应用栈里，向量数据库作为**长期记忆**组件：存储文本嵌入，通过语义检索为 Prompt 注入相关上下文（RAG），或缓存相似历史对话，避开模型固定上下文窗口的限制。注意其**写入成本高、精确查询差**，因此常与关系库组合使用（如元数据过滤 + 向量召回的混合方案）。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答充分覆盖了核心区别（索引结构、ACID、数据范式、相似度搜索）和LLM应用栈中的典型作用（长期记忆、RAG、缓存），解释清晰且无跑题或显著省略。"
+        }
+      ],
+      "latency_ms": 2787.79787956737,
+      "prompt_tokens": 295,
+      "completion_tokens": 850,
+      "total_tokens": 1145,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "sql-injection-vulnerability",
+      "input": "下列伪代码 `db.query(\"SELECT * FROM users WHERE name = '\" + name + \"'\")` 在什么情况下不安全?该如何修?用 4-6 句话回答。",
+      "output": "该伪代码存在**SQL注入**漏洞。当 `name` 参数包含单引号（`'`）或特殊SQL语法（如 `' OR '1'='1`）时，攻击者可操纵查询逻辑，获取所有用户数据或执行恶意操作。**修复方法**：使用参数化查询（预处理语句），例如 Python 的 `cursor.execute(\"SELECT * FROM users WHERE name = %s\", (name,))` 或 Java 的 `PreparedStatement`。注意：仅对输入进行转义（如 `escape_string`）不够彻底，参数化查询才是唯一可靠方案。若框架要求原生SQL，也需用ORM或查询构造器的绑定变量功能。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答准确指出了SQL注入漏洞、攻击示例、修复方法（参数化查询），并强调了转义的不彻底性，核心概念覆盖完整，解释清晰，无跑题或省略。"
+        }
+      ],
+      "latency_ms": 2238.45578385517,
+      "prompt_tokens": 355,
+      "completion_tokens": 707,
+      "total_tokens": 1062,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "k8s-configmap-vs-secret",
+      "input": "Kubernetes 的 ConfigMap 和 Secret 区别是什么,选择哪一个的依据是什么?用 4-6 句话说明。",
+      "output": "ConfigMap 存明文配置，Secret 存敏感数据（如密码、证书），这是唯一本质区别。Secret 在 etcd 中可加密存储（需要开启加密配置），且某些卷挂载方式有更严格的权限控制。选择依据是数据的敏感性：**明文数据用 ConfigMap，任何需要保密的都选 Secret**。不要因为 Secret 的“安全”标签而把所有配置都塞进去，这会造成权限管理混乱；也不要用 ConfigMap 存密码，即使只在集群内使用也极不安全。一个常见反例是用 ConfigMap 存数据库连接字符串，应统一使用 Secret。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答准确覆盖了ConfigMap与Secret的核心区别（明文vs敏感数据）、存储与权限差异、选择依据（数据敏感性），并指出了常见反例，解释清晰且无跑题。"
+        }
+      ],
+      "latency_ms": 2648.926816601306,
+      "prompt_tokens": 285,
+      "completion_tokens": 859,
+      "total_tokens": 1144,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "asyncio-yield-deadlock",
+      "input": "在 Python asyncio 协程中调用 `time.sleep(1)` 会发生什么?为什么不能这样写?用 4-6 句话说明。",
+      "output": "`time.sleep(1)` 会阻塞当前线程，导致事件循环（event loop）无法继续调度其他协程，整个 asyncio 程序将暂停 1 秒。原因是 `time.sleep` 是同步阻塞调用，而 asyncio 依赖事件循环在单线程中通过协作式切换实现并发。正确的做法是使用 `await asyncio.sleep(1)`，它会挂起当前协程并将控制权交还给事件循环。错误使用 `time.sleep` 会彻底破坏 asyncio 的并发模型，造成性能瓶颈甚至死锁。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答准确覆盖了核心概念，清晰解释了time.sleep阻塞事件循环的原因、对并发模型的影响以及正确替代方案，无跑题或省略。"
+        }
+      ],
+      "latency_ms": 1931.4371559303254,
+      "prompt_tokens": 330,
+      "completion_tokens": 640,
+      "total_tokens": 970,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "python-gil-tradeoffs",
+      "input": "用 4-6 句话说明 Python 的 GIL 是什么、它对 CPU 密集型多线程任务的影响,以及常见绕开方式。",
+      "output": "GIL（Global Interpreter Lock）是 CPython 解释器中的一个互斥锁，确保同一时刻只有一个线程执行 Python 字节码。它对 CPU 密集型多线程任务是灾难性的：多个线程无法并行利用多核，反而因锁竞争和上下文切换降低性能。常见绕开方式包括：改用 `multiprocessing`（多进程，每个进程有独立 GIL）；使用 C 扩展（如 NumPy）释放 GIL；或利用 `asyncio` 在 I/O 密集型场景中“伪并发”。纯 Python 的 CPU 密集任务，多线程不如单线程快，推荐换 C 或 Rust 扩展做重计算。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答完整覆盖了GIL的定义、对CPU密集型多线程任务的影响以及常见绕开方式，解释清晰准确，没有跑题或显著省略。"
+        }
+      ],
+      "latency_ms": 2445.924198254943,
+      "prompt_tokens": 315,
+      "completion_tokens": 884,
+      "total_tokens": 1199,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "redis-cluster-failover",
+      "input": "Redis Cluster 中,一个主节点宕机后,从节点是如何被选举为新主、客户端流量是如何被重定向的?用 4-6 句话说明流程。",
+      "output": "主节点宕机后，集群中其他持有 PFAIL 标志的节点在超时内无法收到心跳，将该标志升级为 FAIL 并广播。持有该主节点从节点中，满足 `data_age` 条件的从节点先到得，其通过 **Raft 变体**发起选举：自增 `currentEpoch` 并请求半数以上持有 FAIL 标志的主节点投票。获得多数票后，从节点晋升为主节点并广播 `PONG` 消息更新集群状态。客户端侧，**客户端库通常缓存 slot-node 映射**，但此时请求会被故障主节点返回 `MOVED` 或 `ASK` 错误——若客户端使用默认重定向逻辑，它会重新解析 `CLUSTER SLOTS`，从而发现新主；部分智能客户端则通过订阅 `+switch-master` 事件主动更新拓扑，避免一次失败重试。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.8,
+          "passed": true,
+          "detail": "回答基本覆盖了从节点选举（Raft变体、多数票）和客户端重定向（MOVED/ASK、缓存更新）的核心流程，但未明确说明从节点发起选举前需等待一定时间（如cluster-node-timeout），且对客户端重定向的描述稍显冗余，略有偏离简洁要求。"
+        }
+      ],
+      "latency_ms": 3132.7403967734426,
+      "prompt_tokens": 345,
+      "completion_tokens": 987,
+      "total_tokens": 1332,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "tcp-congestion-control",
+      "input": "TCP 拥塞控制中,慢启动和拥塞避免阶段的核心区别是什么?用 4-6 句话说明。",
+      "output": "慢启动的核心是**指数增长**拥塞窗口（cwnd），每收到一个ACK就加1，实际每RTT翻倍，目的是快速探测网络容量上限。拥塞避免阶段则采用**线性增长**，每个RTT只增加1个MSS（通过每收到一个ACK加1/cwnd实现），以保守方式逼近瓶颈。关键区别在于，慢启动以丢包或ssthresh为信号退出，而拥塞避免在达到丢包后（通常通过3个重复ACK或超时）触发拥塞响应（如乘性减窗）。此外，慢启动假设网络初始空闲，拥塞避免则假设已接近可用带宽，需要谨慎探针。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答准确覆盖了慢启动指数增长与拥塞避免线性增长的核心区别，并说明了退出条件和设计意图，解释清晰且无跑题或省略。"
+        }
+      ],
+      "latency_ms": 2650.132360169664,
+      "prompt_tokens": 290,
+      "completion_tokens": 830,
+      "total_tokens": 1120,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "jwt-vs-session",
+      "input": "JWT 与传统服务端 session 在认证上的核心权衡是什么?用 4-6 句话说明。",
+      "output": "核心权衡在于**有状态 vs 无状态**对系统架构的直接影响。\n\n1. **Session 是服务端有状态**：认证信息存储在服务端内存/DB，天然支持即时吊销（踢下线），但集群部署时必须引入共享存储（如 Redis）或粘性会话，增加了基础设施复杂性。\n2. **JWT 是客户端无状态**：服务端无需存储会话，天然水平扩展，但**无法主动吊销**——在令牌过期前，即使修改用户权限或删除账号，已签发的 JWT 仍有效（除非引入黑名单，这又部分丧失了无状态优势）。\n3. **安全边界不同**：Session 通过 `httpOnly` Cookie 天然防 XSS 窃取令牌；JWT 多存放在 `localStorage` 或 `Authorization` 头，更易受 XSS 攻击，但更适配移动端/跨域场景。\n4. **性能权衡**：JWT 每次请求需解码+签名验证（非对称验签有计算成本）；Session 仅查存储（O(1) 内存查找），但大流量下共享存储可能成为瓶颈。\n\n简言之：**选 Session 要可控性（吊销、安全），接受扩展复杂度；选 JWT 要扩展性（无状态、跨域），接受吊销代理方案与 XSS 风险。**",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答充分覆盖了JWT与Session在状态管理、吊销能力、安全边界和性能上的核心权衡，解释清晰且无跑题或省略。"
+        }
+      ],
+      "latency_ms": 2793.8954978249967,
+      "prompt_tokens": 275,
+      "completion_tokens": 889,
+      "total_tokens": 1164,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "transformer-attention",
+      "input": "Transformer 中的 self-attention 是怎么工作的?Q/K/V 各自的作用是什么?用 4-6 句话说明。",
+      "output": "Self-attention 通过计算序列中每个位置与其他位置的关联权重，实现全局上下文建模。输入向量经三个独立线性变换得到 Query、Key 和 Value：**Q 负责发出查询**，**K 负责提供被匹配的键**，**V 携带实际被聚合的信息**。通过 Q 与 K 的点积计算注意力分数（通常除以 √d_k 做缩放），再经 softmax 得到权重，最后对 V 加权求和。这种分离设计让模型可以动态选择关注哪些输入位置的信息（通过 Q/K 交互），而用 V 独立保留原始内容，避免权重影响信息质量。实际中采用多头机制，多组 Q/K/V 并行捕获不同子空间的关联模式。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答完整覆盖了self-attention的核心机制，清晰解释了Q/K/V各自的作用，包括缩放点积、加权求和及多头机制，没有跑题或显著省略。"
+        }
+      ],
+      "latency_ms": 2724.3193955160677,
+      "prompt_tokens": 290,
+      "completion_tokens": 902,
+      "total_tokens": 1192,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "config": {
+    "name": "high-temp-broken",
+    "dataset": "docs/blog/article2/qa.high-temp.yaml",
+    "model": "deepseek-chat",
+    "prompt_template": "Assume the user is a senior engineer who knows the basics. Skip foundational explanations and focus on the non-obvious parts. Be concise: {{input}}",
+    "system": null,
+    "temperature": 1.0,
+    "concurrency": 3,
+    "samples": 5,
+    "scorers": [
+      {
+        "type": "llm_judge",
+        "params": {
+          "criteria": "回答是否充分覆盖了核心概念、解释清楚、且没有跑题或显著省略。完整覆盖给 1.0,部分覆盖给 0.5 左右,严重缺失或跑题给 0.0。",
+          "language": "zh"
+        }
+      }
+    ]
+  }
+}

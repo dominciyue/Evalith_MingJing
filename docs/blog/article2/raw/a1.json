@@ -1,0 +1,277 @@
+{
+  "id": "4d8c6593f04f",
+  "name": "high-temp-baseline",
+  "created_at": "2026-05-31T11:54:15.195163Z",
+  "model": "deepseek-chat",
+  "results": [
+    {
+      "case_id": "explain-rlhf",
+      "input": "用 4-6 句话解释 RLHF(从人类反馈中强化学习)是什么、为什么需要它,以及典型流程的主要环节。",
+      "output": "RLHF（Reinforcement Learning from Human Feedback）是一种结合强化学习与人类偏好来训练语言模型的方法。它的核心目的是让模型生成的结果更符合人类的价值观、有用性和安全性，而不仅仅是拟合文本统计规律，因为仅靠无监督学习可能产生有害、不真实或偏离用户期望的内容。典型流程主要包括三个环节：首先，收集人类对模型多个输出的偏好排序数据，训练一个奖励模型来模拟人类判断；然后，利用该奖励模型作为强化学习的奖励信号，对预训练语言模型进行微调（如使用PPO算法）；最后，通过迭代更新使模型逐步学会生成更受人类青睐的回复。这种方法显著提升了大模型在对话、指令遵循等任务中的表现，也是ChatGPT等模型成功的关键技术之一。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答完整覆盖了RLHF的核心概念、必要性以及典型流程的三个主要环节，解释清晰准确，没有跑题或显著省略。"
+        }
+      ],
+      "latency_ms": 2700.3127567470074,
+      "prompt_tokens": 170,
+      "completion_tokens": 858,
+      "total_tokens": 1028,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "explain-vector-db",
+      "input": "用 4-6 句话说明向量数据库与传统关系型数据库的核心区别,以及在 LLM 应用栈里的典型作用。",
+      "output": "向量数据库的核心区别在于：传统关系型数据库按行和列存储精确数值或文本，并通过精确匹配或范围查询检索数据；而向量数据库专门存储高维向量（如词嵌入），并通过**近似最近邻搜索**（如余弦相似度、欧几里得距离）来比较向量之间的语义相似性，而非精确字段比较。在 LLM 应用栈中，向量数据库典型作用是为大语言模型提供**外部长期记忆**——它存储文档知识片段转化的向量，当用户提问时，系统立即将问题向量化并在库中检索最相关片段，然后将这些上下文注入 LLM 的提示词，从而让模型回答基于私有或实时知识，同时有效缓解幻觉问题。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答准确覆盖了向量数据库与传统关系型数据库在存储结构、查询方式上的核心区别，并清晰说明了在LLM应用栈中作为外部长期记忆、缓解幻觉的典型作用，内容完整且无跑题。"
+        }
+      ],
+      "latency_ms": 2521.9630080275238,
+      "prompt_tokens": 155,
+      "completion_tokens": 790,
+      "total_tokens": 945,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "sql-injection-vulnerability",
+      "input": "下列伪代码 `db.query(\"SELECT * FROM users WHERE name = '\" + name + \"'\")` 在什么情况下不安全?该如何修?用 4-6 句话回答。",
+      "output": "这段伪代码不安全的情况是当用户输入`name`中包含恶意构造的SQL语句时，例如输入 `' OR '1'='1`，会导致查询变为 `SELECT * FROM users WHERE name = '' OR '1'='1'`，从而绕过身份验证或泄露全部用户数据。修复方法是使用参数化查询或预编译语句，将用户输入作为参数而非直接拼接到SQL字符串中。具体修改示例（以Python的DB-API为例）：`db.execute(\"SELECT * FROM users WHERE name = %s\", (name,))`。这样可以确保用户输入始终被当作数据而非SQL代码处理，彻底杜绝SQL注入风险。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答准确指出了SQL注入的不安全场景（如' OR '1'='1），清晰解释了风险原理，并给出了正确的修复方法（参数化查询）及示例，覆盖了核心概念且无遗漏或跑题。"
+        }
+      ],
+      "latency_ms": 2185.221789032221,
+      "prompt_tokens": 215,
+      "completion_tokens": 743,
+      "total_tokens": 958,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "k8s-configmap-vs-secret",
+      "input": "Kubernetes 的 ConfigMap 和 Secret 区别是什么,选择哪一个的依据是什么?用 4-6 句话说明。",
+      "output": "**ConfigMap 用于存储非敏感配置数据（如应用参数、环境变量），而 Secret 则专门存储敏感信息（如密码、API 密钥、证书）。** 两者的主要区别在于**数据安全性和编码方式**：Secret 会自动进行 Base64 编码并支持加密存储（如启用 etcd 加密），而 ConfigMap 默认是明文。**选择依据是数据的敏感程度**——若包含密码、令牌等需保护的凭证，必须用 Secret；若仅为普通的配置文件或环境变量，则应使用 ConfigMap，以避免不必要的复杂度。总之，**坚持“非敏感用 ConfigMap，敏感用 Secret”的原则**，可兼顾安全与便捷。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答完整覆盖了ConfigMap与Secret的核心区别（用途、安全性、编码方式），并清晰说明了选择依据（数据敏感程度），无跑题或省略。"
+        }
+      ],
+      "latency_ms": 2202.7907207608223,
+      "prompt_tokens": 160,
+      "completion_tokens": 742,
+      "total_tokens": 902,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "asyncio-yield-deadlock",
+      "input": "在 Python asyncio 协程中调用 `time.sleep(1)` 会发生什么?为什么不能这样写?用 4-6 句话说明。",
+      "output": "在 Python asyncio 协程中调用 `time.sleep(1)` 会导致整个事件循环被阻塞 1 秒，因为 `time.sleep` 是同步阻塞调用，它会暂停当前线程的执行，而事件循环正运行在该线程上。这意味着在此期间所有其他协程都无法执行，完全违背了异步编程的并发目的。正确的做法是使用 `await asyncio.sleep(1)`，它会挂起当前协程而不阻塞事件循环，让其他协程获得运行机会。简言之，同步阻塞函数会破坏异步框架的协作式调度机制。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答准确覆盖了核心概念，清晰解释了time.sleep阻塞事件循环的原因、后果以及正确替代方案，没有跑题或省略。"
+        }
+      ],
+      "latency_ms": 2093.299728119746,
+      "prompt_tokens": 190,
+      "completion_tokens": 706,
+      "total_tokens": 896,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "python-gil-tradeoffs",
+      "input": "用 4-6 句话说明 Python 的 GIL 是什么、它对 CPU 密集型多线程任务的影响,以及常见绕开方式。",
+      "output": "Python 的 **GIL（全局解释器锁）** 是 CPython 解释器中的一个互斥锁，它确保同一时刻只有一个线程在执行 Python 字节码。对于 **CPU 密集型任务**，GIL 会导致多线程无法利用多核并行加速，因为线程需要争夺这把锁，实际执行时仍为串行，甚至可能因上下文切换比单线程更慢。常见的绕开方式包括使用 **多进程**（通过 `multiprocessing` 库让每个进程拥有独立 GIL）、采用 **C 扩展**（如 NumPy 或 Cython，在释放 GIL 的情况下计算），或者换用**无 GIL 的解释器**（如 Jython、PyPy 的某些版本）来彻底规避限制。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答完整覆盖了GIL的定义、对CPU密集型多线程任务的影响以及常见绕开方式，解释清晰准确，无跑题或显著省略。"
+        }
+      ],
+      "latency_ms": 2271.1946349125355,
+      "prompt_tokens": 175,
+      "completion_tokens": 866,
+      "total_tokens": 1041,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "redis-cluster-failover",
+      "input": "Redis Cluster 中,一个主节点宕机后,从节点是如何被选举为新主、客户端流量是如何被重定向的?用 4-6 句话说明流程。",
+      "output": "Redis Cluster 中，当主节点宕机后，其从节点会通过**集群内部的心跳机制**检测到主节点失联。随后，其他健康主节点会发起**故障转移选举**（基于Raft-like的投票），只有持有最新数据的从节点才能获得大多数主节点的投票晋升为新主。晋升成功后，该从节点会广播**PONG消息**更新集群的槽位映射表（slot-to-node mapping）。客户端在访问宕机节点负责的槽位时，会收到**MOVED或ASK重定向错误**，从而根据新映射向新主节点发送请求。最终，整个集群在数秒内完成自动恢复。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.9,
+          "passed": true,
+          "detail": "回答准确覆盖了从节点检测、选举投票、槽位更新和客户端重定向的核心流程，逻辑清晰且无跑题，但未提及选举中epoch等细节，略有简化。"
+        }
+      ],
+      "latency_ms": 2544.084982480854,
+      "prompt_tokens": 210,
+      "completion_tokens": 731,
+      "total_tokens": 941,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "tcp-congestion-control",
+      "input": "TCP 拥塞控制中,慢启动和拥塞避免阶段的核心区别是什么?用 4-6 句话说明。",
+      "output": "TCP 拥塞控制中，慢启动阶段的核心目的是快速探测网络可用带宽，其拥塞窗口（cwnd）每收到一个ACK便指数级增长（即每个RTT翻倍），初始值通常较小。而拥塞避免阶段则是在接近网络容量时，采用较为保守的线性增长（每个RTT仅增加1 MSS），以防止窗口增长过快导致拥塞。两者的切换点由**慢启动阈值**决定：当 cwnd 达到该阈值时，TCP 从指数增长转为线性增长。简而言之，慢启动追求“快速抢占带宽”，拥塞避免则追求“谨慎维护平衡”。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答准确覆盖了慢启动的指数增长与拥塞避免的线性增长核心区别，并说明了切换阈值，解释清晰且无跑题。"
+        }
+      ],
+      "latency_ms": 2334.6630848944187,
+      "prompt_tokens": 155,
+      "completion_tokens": 766,
+      "total_tokens": 921,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "jwt-vs-session",
+      "input": "JWT 与传统服务端 session 在认证上的核心权衡是什么?用 4-6 句话说明。",
+      "output": "JWT 与 Session 的核心权衡在于 **状态存储位置** 与 **可撤销性** 的互换。Session 依赖服务端内存或数据库保存用户状态，因此服务端可以随时主动销毁会话，实现精确的登出与权限控制，但这也带来了分布式部署下的额外开销。JWT 将用户身份信息编码进客户端令牌，服务端无需存储状态，天然支持水平扩展，但正因无状态，在令牌过期前无法主动使其失效（需依赖黑名单等妥协方案）。此外，JWT 的 Payload 虽经签名但明文可见，不适合存放敏感数据，且令牌通常较大，会增加每次请求的网络开销。简而言之，Session 牺牲了扩展性换取可控性，而 JWT 用可控性交换了扩展性与去中心化的便利。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答准确覆盖了JWT与Session在状态存储位置、可撤销性、扩展性、安全性及网络开销方面的核心权衡，解释清晰且无跑题或显著省略。"
+        }
+      ],
+      "latency_ms": 2516.634444799274,
+      "prompt_tokens": 140,
+      "completion_tokens": 774,
+      "total_tokens": 914,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "transformer-attention",
+      "input": "Transformer 中的 self-attention 是怎么工作的?Q/K/V 各自的作用是什么?用 4-6 句话说明。",
+      "output": "Self-Attention 的核心是让序列中的每个词都能“看到”所有其他词，从而动态地计算它们之间的相关性。具体来说，输入向量会经过三个不同的线性变换，分别生成 **Query（Q）**、**Key（K）** 和 **Value（V）**。  \n**Q** 的作用是“提出查询”，好比是你当前正在关注的词想问：“谁和我有关系？”；**K** 的作用是“提供索引”，相当于每个其他词回答：“我有什么特征来匹配你的查询？”。  \n然后，通过计算 Q 与所有 K 的点积（并经过 softmax 归一化）得到一个注意力权重矩阵，该权重表示当前词对其他词的关注程度。最后，用这个权重去加权求和所有 **V**（V 代表每个词本身携带的信息），从而得到当前词的最终输出。  \n简而言之，**Q 和 K 负责计算“该看谁”**，而 **V 负责提供“看完后该提取什么信息”**。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 1.0,
+          "passed": true,
+          "detail": "回答完整覆盖了self-attention的核心概念，清晰解释了Q/K/V各自的作用，逻辑连贯且没有跑题或显著省略。"
+        }
+      ],
+      "latency_ms": 2464.0483365394175,
+      "prompt_tokens": 155,
+      "completion_tokens": 802,
+      "total_tokens": 957,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "config": {
+    "name": "high-temp-baseline",
+    "dataset": "docs/blog/article2/qa.high-temp.yaml",
+    "model": "deepseek-chat",
+    "prompt_template": "{{input}}",
+    "system": null,
+    "temperature": 1.0,
+    "concurrency": 3,
+    "samples": 5,
+    "scorers": [
+      {
+        "type": "llm_judge",
+        "params": {
+          "criteria": "回答是否充分覆盖了核心概念、解释清楚、且没有跑题或显著省略。完整覆盖给 1.0,部分覆盖给 0.5 左右,严重缺失或跑题给 0.0。",
+          "language": "zh"
+        }
+      }
+    ]
+  }
+}
