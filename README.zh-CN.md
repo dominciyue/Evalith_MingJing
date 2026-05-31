@@ -163,6 +163,7 @@ v0.4 —— 单轮 prompt 评测、基于文件的运行存储、带逐用例输
 ## 深入阅读
 
 - **技术深度文(中文):** [AI 回归测试需要统计显著性: 用 bootstrap CI 抗 LLM 噪声](https://zhuanlan.zhihu.com/p/2043351926964848178) —— 为什么点对点比较的 eval CI gate 在统计上就是错的、Evalith `--samples N` 背后的数学,以及一组可复现的 DeepSeek A/B 实验。
+- **续篇(中文):** [续:LLM 当 judge 自己也在抖](docs/blog/2026-05-31-llm-judge-noise-bootstrap.zh.md) —— bootstrap CI 抗噪与三个 OSS eval 工具的同台对照。
 - **设计文档与 TDD 计划:** [`docs/`](docs/) —— v0.1 spec、v0.1/v0.2 任务级 plan,以及博客原文。
 
 ## 许可证

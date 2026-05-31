@@ -166,6 +166,7 @@ roadmap. Issues and PRs welcome.
 ## Read more
 
 - **Deep dive (Chinese):** [AI 回归测试需要统计显著性: 用 bootstrap CI 抗 LLM 噪声](https://zhuanlan.zhihu.com/p/2043351926964848178) — why point-to-point eval diffs are statistically wrong, the math behind Evalith's `--samples N`, and a reproducible DeepSeek A/B experiment.
+- **Follow-up (Chinese):** [续:LLM 当 judge 自己也在抖](docs/blog/2026-05-31-llm-judge-noise-bootstrap.zh.md) — noise-immunity validation under high temperature + llm_judge, plus a 3-tool comparison against promptfoo and DeepEval.
 - **Design docs & TDD plans:** [`docs/`](docs/) — v0.1 spec, v0.1/v0.2 task-by-task plans, and the blog source.
 
 ## License
