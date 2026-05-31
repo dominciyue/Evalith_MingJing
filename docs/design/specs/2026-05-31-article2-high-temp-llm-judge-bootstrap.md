@@ -64,7 +64,7 @@ Zhihu readership; opens by quoting article 1's own honest limitation paragraph.
 | 4 | 实验 B:注入隐式 prompt 偏差 | ~600 | Before/after table + which cases CI captured + honest about which it didn't |
 | 5 | 同台对照:promptfoo / DeepEval 跑同一套 | ~800 | Three-tool side-by-side judgment table + false-alarm / capture-rate comparison |
 | 6 | 这告诉我们什么 | ~400 | Two synthesized points: statistical significance is non-optional; LLM-as-judge is not a neutral observer |
-| 7 | 局限 + 下一步 | ~300 | Same style as article 1; honest about paired/BCa/FDR not done |
+| 7 | 局限 + 下一步 | ~300 | Same style as article 1; honest about paired/BCa/FDR not done **and explicitly promises article 3 on these** (so §10.1's claim is grounded) |
 
 ## 5. Experiment design
 
@@ -123,12 +123,13 @@ boundary that bootstrap CI is designed for.
 
 ### 5.4 Ground truth
 
-Before running the experiment, write down (in the article) a hypothesis on
-which of the 10 cases the regression *should* affect (likely 4–6 of the more
-concept-heavy ones; arithmetic-style/short-answer ones may shrug it off).
-Then judge each tool against this prediction.
-
-This is documented up-front so the article cannot post-hoc rationalize.
+Before running experiment B, write the hypothesis directly into the article
+body in §4 (which 4–6 of the 10 cases the regression *should* hit — likely
+the concept-heavy ones; the diagnostic / safety-identification ones may
+shrug it off). The hypothesis is committed in the article text **before**
+any A1-vs-B table is shown, and the implementation plan reflects this
+ordering. This prevents post-hoc rationalization and gives readers a
+verifiable predicted set to compare against the three tools' verdicts.
 
 ## 6. Comparison framework (the §5 horizontal comparison)
 
@@ -143,6 +144,11 @@ each tool's statistical inference / report**.
   the same outputs. Use its official-recommended config.
 - **DeepEval:** `assert_test` + `compare_test_results` (or equivalent latest
   API). Use its official-recommended config.
+
+**Honest caveat baked into the framing:** if a competitor tool has no
+noise-aware compare mode, its "verdict" is its point-compare verdict — and
+that's not unfair, it *is* the point of the article. The horizontal table
+will surface this asymmetry rather than hide it.
 
 ### 6.2 Shared metrics
 
@@ -168,10 +174,11 @@ For each tool, on each comparison (A1 vs A2, A1 vs B):
 
 ## 7. Repo deliverables (commits, not just article)
 
-New files (single PR / commit batch):
+New files (single commit batch; file date stamped on actual publication day,
+anchored on when experiment runs cleanly end-to-end — likely early June 2026):
 
 ```
-docs/blog/2026-XX-XX-llm-judge-noise-bootstrap.zh.md     # article body
+docs/blog/YYYY-MM-DD-llm-judge-noise-bootstrap.zh.md     # article body
 docs/blog/article2/
   qa.high-temp.yaml                                       # 10-case dataset
   eval.high-temp.yaml                                     # Evalith baseline config
@@ -241,3 +248,11 @@ writing-plans phase or during execution, not at spec time:
 - Whether to render the per-case noise-floor fluctuation as a markdown table
   or an ASCII chart (decided in writing phase).
 - Final article title (working title in §4 is a candidate, not final).
+- **Judge temperature control** — §5.2 calls for `judge model` at
+  `temperature=0`. Current Evalith `llm_judge` scorer (v0.4) may or may not
+  expose a `temperature` parameter on the judge call. The implementation
+  phase must verify; if absent, options are: (a) add a single config field
+  for judge temp (minimal, ~10 LOC — and arguably a v0.4 polish rather than
+  a "new feature", so it doesn't break the no-new-features pledge in §7);
+  (b) accept whatever default the judge uses and document the choice. Decision
+  deferred to implementation.
