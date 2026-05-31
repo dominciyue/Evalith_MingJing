@@ -1,6 +1,6 @@
 [project]
 name = "evalith"
-version = "0.4.0"
+version = "0.5.0"
 description = "Neutral, local-first AI regression-testing tool (明镜 / Evalith)"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -30,7 +30,7 @@ Repository = "https://github.com/dominciyue/Evalith_MingJing"
 Issues = "https://github.com/dominciyue/Evalith_MingJing/issues"
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "scipy>=1.11"]
 litellm = ["litellm>=1.40"]
 
 [project.scripts]
