@@ -170,3 +170,35 @@ def test_bootstrap_paired_is_deterministic():
     a = bootstrap_diff_ci([1.0, 0.0, 1.0], [0.0, 1.0, 0.0], method="paired", seed=3)
     b = bootstrap_diff_ci([1.0, 0.0, 1.0], [0.0, 1.0, 0.0], method="paired", seed=3)
     assert a == b
+
+
+def test_diff_runs_bh_correction_reduces_regressed_count_when_many_cases():
+    """Benjamini-Hochberg correction must be at least as conservative as no correction.
+    On article 2's frozen raw, no-correction reports 2/10 regressed; with BH, count
+    should be <= 2 (BH is monotone — can never add a regression)."""
+    from pathlib import Path
+    from evalith.diff import diff_runs
+    from evalith.models import Run
+
+    a1 = Run.model_validate_json(Path("docs/blog/article2/raw/a1.json").read_text())
+    b  = Run.model_validate_json(Path("docs/blog/article2/raw/b.json").read_text())
+
+    report_no = diff_runs(a1, b)
+    report_bh = diff_runs(a1, b, multi_test_correction="bh")
+
+    flagged_no = {c.case_id for c in report_no.cases if c.status == "regressed"}
+    flagged_bh = {c.case_id for c in report_bh.cases if c.status == "regressed"}
+
+    assert flagged_bh.issubset(flagged_no), \
+        f"BH should only shrink the regressed set, never grow it. No-corr={flagged_no} BH={flagged_bh}"
+
+
+def test_diff_runs_bh_rejects_unknown_method():
+    from evalith.diff import diff_runs
+    from evalith.models import Run
+    import pytest as pt
+    from pathlib import Path
+    a1 = Run.model_validate_json(Path("docs/blog/article2/raw/a1.json").read_text())
+    b  = Run.model_validate_json(Path("docs/blog/article2/raw/b.json").read_text())
+    with pt.raises(ValueError):
+        diff_runs(a1, b, multi_test_correction="bonferroni")

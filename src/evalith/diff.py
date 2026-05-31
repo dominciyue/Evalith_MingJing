@@ -199,7 +199,32 @@ class DiffReport:
         }
 
 
-def diff_runs(before: Run, after: Run, tol: float = 1e-9) -> DiffReport:
+def _case_samples_by_id(run: Run, case_id: str) -> list[float]:
+    for r in run.results:
+        if r.case_id == case_id:
+            return _case_samples(r)
+    return []
+
+
+def _two_sided_bootstrap_pvalue(before: list[float], after: list[float], *,
+                                 n_resamples: int = 1000, seed: int = 0) -> float:
+    """Two-sided bootstrap p for H0: mean(after) == mean(before)."""
+    rng = random.Random(seed)
+    n_b, n_a = len(before), len(after)
+    if n_b == 0 or n_a == 0:
+        return 1.0
+    diffs: list[float] = []
+    for _ in range(n_resamples):
+        b_mean = sum(rng.choice(before) for _ in range(n_b)) / n_b
+        a_mean = sum(rng.choice(after) for _ in range(n_a)) / n_a
+        diffs.append(a_mean - b_mean)
+    p_left  = sum(1 for d in diffs if d <= 0) / n_resamples
+    p_right = sum(1 for d in diffs if d >= 0) / n_resamples
+    return min(1.0, 2 * min(p_left, p_right))
+
+
+def diff_runs(before: Run, after: Run, tol: float = 1e-9, *,
+              multi_test_correction: str | None = None) -> DiffReport:
     before_r = {r.case_id: r for r in before.results}
     after_r = {r.case_id: r for r in after.results}
     cases: list[CaseDiff] = []
@@ -233,4 +258,28 @@ def diff_runs(before: Run, after: Run, tol: float = 1e-9) -> DiffReport:
         if cid not in after_r:
             cases.append(CaseDiff(cid, "removed", case_score(br), None, br.output, None))
     cases.sort(key=lambda c: c.case_id)
+    if multi_test_correction is not None:
+        if multi_test_correction != "bh":
+            raise ValueError(f"unknown multi_test_correction: {multi_test_correction!r}; supported: bh")
+        # Compute per-case bootstrap p-values (two-sided). Family is cases where both before and after
+        # are present (no new/removed cases).
+        family = [c for c in cases if c.before is not None and c.after is not None]
+        pvals = []
+        for c in family:
+            b_samples = _case_samples_by_id(before, c.case_id)
+            a_samples = _case_samples_by_id(after, c.case_id)
+            p = _two_sided_bootstrap_pvalue(b_samples, a_samples, seed=0)
+            pvals.append((c.case_id, p))
+        n_fam = len(pvals)
+        if n_fam > 0:
+            sorted_pvals = sorted(pvals, key=lambda x: x[1])
+            threshold = 0.05
+            kept: set[str] = set()
+            for k, (cid, p) in enumerate(sorted_pvals, start=1):
+                if p <= (k / n_fam) * threshold:
+                    kept = {sid for sid, _ in sorted_pvals[:k]}
+            # Revert any "regressed" verdict not BH-supported back to "unchanged"
+            for c in cases:
+                if c.status == "regressed" and c.case_id not in kept:
+                    c.status = "unchanged"
     return DiffReport(cases=cases)
