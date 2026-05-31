@@ -202,3 +202,47 @@ def test_diff_runs_bh_rejects_unknown_method():
     b  = Run.model_validate_json(Path("docs/blog/article2/raw/b.json").read_text())
     with pt.raises(ValueError):
         diff_runs(a1, b, multi_test_correction="bonferroni")
+
+
+def test_cli_diff_accepts_ci_method_flag(tmp_path):
+    """`evalith diff a.json b.json --ci-method bca` runs without error."""
+    import subprocess, sys
+    from pathlib import Path
+    a = Path("docs/blog/article2/raw/a1.json")
+    b = Path("docs/blog/article2/raw/b.json")
+    assert a.exists() and b.exists(), "article 2 frozen raw missing"
+    res = subprocess.run(
+        [sys.executable, "-m", "evalith.cli", "diff", str(a), str(b), "--ci-method", "bca"],
+        capture_output=True, text=True,
+    )
+    assert res.returncode in (0, 1), f"unexpected exit {res.returncode}: stderr={res.stderr[-400:]}"
+
+
+def test_cli_diff_accepts_multi_test_flag(tmp_path):
+    import subprocess, sys
+    from pathlib import Path
+    a = Path("docs/blog/article2/raw/a1.json")
+    b = Path("docs/blog/article2/raw/b.json")
+    res = subprocess.run(
+        [sys.executable, "-m", "evalith.cli", "diff", str(a), str(b), "--multi-test", "bh"],
+        capture_output=True, text=True,
+    )
+    assert res.returncode in (0, 1), f"unexpected exit {res.returncode}: stderr={res.stderr[-400:]}"
+
+
+def test_diff_runs_passes_ci_method_to_bootstrap():
+    """diff_runs(ci_method='bca') and diff_runs() should produce different CI on at least one case."""
+    from pathlib import Path
+    from evalith.diff import diff_runs
+    from evalith.models import Run
+    a1 = Run.model_validate_json(Path("docs/blog/article2/raw/a1.json").read_text())
+    b  = Run.model_validate_json(Path("docs/blog/article2/raw/b.json").read_text())
+
+    report_pct  = diff_runs(a1, b)
+    report_bca  = diff_runs(a1, b, ci_method="bca")
+
+    pct_cis = {c.case_id: c.ci for c in report_pct.cases if c.ci is not None}
+    bca_cis = {c.case_id: c.ci for c in report_bca.cases if c.ci is not None}
+    assert pct_cis.keys() == bca_cis.keys()
+    differing = [cid for cid in pct_cis if pct_cis[cid] != bca_cis[cid]]
+    assert len(differing) >= 1, "BCa and percentile should produce different CI on at least one case"

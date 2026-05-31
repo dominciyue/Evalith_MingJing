@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 import typer
 
@@ -57,11 +58,22 @@ def diff(before: str, after: str, store: str = ".evalith",
          fail_on_regression: bool = typer.Option(False, "--fail-on-regression",
              help="Exit 1 if any case regressed."),
          fmt: str = typer.Option("text", "--format", help="text, md, or html"),
-         output: str = typer.Option(None, "--output", help="write report to file")) -> None:
+         output: str = typer.Option(None, "--output", help="write report to file"),
+         ci_method: str = typer.Option(
+             "percentile",
+             "--ci-method",
+             help="Bootstrap CI method: percentile (default), bca, or paired.",
+         ),
+         multi_test: Optional[str] = typer.Option(
+             None,
+             "--multi-test",
+             help="Multiple-comparison correction across cases: bh (Benjamini-Hochberg). Default: no correction.",
+         )) -> None:
     """Compare two runs and show which cases improved or regressed."""
     if fmt not in {"text", "md", "html"}:
         raise typer.BadParameter("format must be 'text', 'md', or 'html'")
-    report = diff_runs(_load_run(store, before), _load_run(store, after))
+    report = diff_runs(_load_run(store, before), _load_run(store, after),
+                       ci_method=ci_method, multi_test_correction=multi_test)
     if fmt in {"md", "html"}:
         from .report import diff_to_html, diff_to_markdown
         text = (diff_to_html(report, before, after) if fmt == "html"

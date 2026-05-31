@@ -224,6 +224,7 @@ def _two_sided_bootstrap_pvalue(before: list[float], after: list[float], *,
 
 
 def diff_runs(before: Run, after: Run, tol: float = 1e-9, *,
+              ci_method: str = "percentile",
               multi_test_correction: str | None = None) -> DiffReport:
     before_r = {r.case_id: r for r in before.results}
     after_r = {r.case_id: r for r in after.results}
@@ -238,7 +239,7 @@ def diff_runs(before: Run, after: Run, tol: float = 1e-9, *,
         b_samples, a_samples = _case_samples(br), _case_samples(ar)
         # Bootstrap CI only when at least one side has >=2 trials — else fall back to point compare
         if max(len(b_samples), len(a_samples)) >= 2:
-            lo, hi = bootstrap_diff_ci(b_samples, a_samples)
+            lo, hi = bootstrap_diff_ci(b_samples, a_samples, method=ci_method)
             if hi < -tol:
                 status = "regressed"
             elif lo > tol:
