@@ -1,0 +1,11 @@
+name: high-temp-broken
+dataset: docs/blog/article2/qa.high-temp.yaml
+model: deepseek-chat
+prompt_template: "Assume the user is a senior engineer who knows the basics. Skip foundational explanations and focus on the non-obvious parts. Be concise: {{input}}"
+temperature: 1.0
+concurrency: 3
+scorers:
+  - type: llm_judge
+    params:
+      criteria: "回答是否充分覆盖了核心概念、解释清楚、且没有跑题或显著省略。完整覆盖给 1.0,部分覆盖给 0.5 左右,严重缺失或跑题给 0.0。"
+      language: zh
