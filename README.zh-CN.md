@@ -152,6 +152,15 @@ API key。`llm_judge` 评分器可用 `params: {language: zh}` 进行中文评�
 延迟的 JSON 快照)保存到 `.evalith/runs/`。`diff` 逐条比较两次保存的 Run,把每条
 用例标记为**改进 / 回退 / 不变 / 新增 / 移除**。
 
+## v0.5 新功能
+
+- **`--ci-method bca`** —— Δ 上的 BCa(偏置纠正加速)bootstrap。仅依赖 Python 标准库;在 bootstrap 分布偏态时比 percentile 更准。
+- **`--ci-method paired`** —— paired bootstrap。当 before/after 通过 case 维度有相关性时,CI 宽度收窄,降假阳率。
+- **`--multi-test bh`** —— 跨 case 的 Benjamini-Hochberg FDR 控制。case 数多时,纯 percentile 容易过度报告回退;BH 压制家族级假阳率。
+- **scipy** 进入 dev 依赖(用作单元测试 ground truth),不进 runtime —— 生产部署仍然零额外依赖。
+
+v0.5 的全部新增都是 opt-in。v0.4 默认行为字节级保留。
+
 ## 状态
 
 v0.4 —— 单轮 prompt 评测、基于文件的运行存储、带逐用例输出对比**和 Δ 上的 bootstrap

@@ -153,6 +153,15 @@ every case's output, scores, tokens, cost, and latency — to `.evalith/runs/`.
 `diff` compares two saved runs case-by-case and labels each **improved / regressed
 / unchanged / new / removed**.
 
+## What's new in v0.5
+
+- **`--ci-method bca`** — BCa (bias-corrected and accelerated) bootstrap on Δ. Stdlib-only; more accurate than percentile when the bootstrap distribution is skewed.
+- **`--ci-method paired`** — paired bootstrap. Reduces variance when before/after correlate through a shared case dimension.
+- **`--multi-test bh`** — Benjamini-Hochberg FDR control across cases. With many cases, percentile alone can over-report regressions; BH compresses the family-wise false-positive rate.
+- **scipy** is now a dev dependency (used as ground truth in tests). Not pulled into runtime — production installs stay minimal.
+
+All v0.5 additions are opt-in. The v0.4 default behavior is byte-for-byte preserved.
+
 ## Status
 
 v0.4 — single-turn prompt evaluation, file-based run store, run-to-run diff with
