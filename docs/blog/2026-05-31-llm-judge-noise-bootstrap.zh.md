@@ -276,15 +276,45 @@ Evalith 不是要取代它们。Evalith 目前补的那一块是:**基于 bootst
 
 ## 六、这告诉我们什么
 
-<TODO §6 synthesis — Task 14>
+### 统计显著性不是可选项
+
+§3 的 `redis-cluster-failover` 用数字把这件事说清楚了:在 llm_judge 评分体系下,同一道题、同一个模型、同一份 config,单样本 pass rate 可以在 0.0 和 1.0 之间跳动。A1 跑出来是 0.80(5 次里 1 次挂),A2 跑出来是 0.60(5 次里 2 次挂)——单样本极差 [0.0, 1.0],意味着任何一次单跑都可能落在这个区间的任何一点上。
+
+如果你在 CI 里用单样本点对点比较,这条记录会被判成"A1 → A2,回退 25%,阻断 PR"。但那个 0.80 本身就不稳定——下次重跑可能变 1.0,也可能变 0.4。你的阻断依据是一枚偏心硬币的正反面,而不是模型能力的变化。bootstrap CI 给出 [-0.80, +0.40],跨过 0,判 unchanged——这才是正确的裁决。
+
+这不再是上篇那种"理论上 bootstrap 抗噪"的论述。数字摆在这里:A1 单样本极差 [0.0, 1.0],A2 跑出 5/5 里 2 个挂掉。单样本比较会把这两次的差异判成"回退 25%",bootstrap CI 跨过 0 判 unchanged。两者的判定结果完全相反,但只有一个符合事实——config 根本没动。
+
+这里的核心机制不是 bootstrap 本身有多复杂,而是:**从 CI gate 的设计开始,就必须把噪声当一等公民对待。** 点对点比较是今天大多数 eval 工具的默认行为——这个默认值本身是个 bug,不是因为工具不够好,而是因为单样本不能描述总体。任何不引入采样 + CI 的 gate,在 llm_judge 评分场景下只能是"过严则误报频繁、过松则真回退漏过"——两种调法都让工程师不信任 gate 本身。
+
+### LLM-as-judge 是第二个噪声源,这件事改变了 eval 工具的设计
+
+上篇说过"llm_judge 本身也在抖",但没有把这个结论推到工具设计层面。这一篇的横评数据给了更具体的证据。
+
+当 judge 也是 LLM 时,同一个答案被多次评分得到的结果会不一样——尤其是边界 case,比如"回答正确但不完整"、"覆盖了主干但漏了一个关键步骤"这类情况。这意味着 eval 的不确定性来自两层叠加:模型输出抖动 × judge 评分抖动。两层都在,两层都不可忽视。
+
+§5 的对照数据直接证明了这一点的工具间影响。三家工具用了同一份 criteria 字符串、同一个 deepseek-chat judge、同一份 dataset,verdict 仍然分叉成 2/1/5 三种结果——Evalith 严格 2 个,promptfoo 保守 1 个,DeepEval 敏感 5 个。分歧完全来自各家把 criteria 落实到 LLM 提示工程和聚合阈值时的工程选择不同:promptfoo 的默认模板对"完整性"维度敏感度低,DeepEval 的 chain-of-thought 对短回答惩罚更重,Evalith 的 bootstrap CI 在均值差值上做统计显著性检验。
+
+这说明:**"用 LLM 评 LLM"不是一个中立、可比较的测量行为**,它本身是工具实现细节强相关的。同一个评测问题,落实到不同工具,就是不同的测量。这不是 bug,也不能靠调参消除——除非三家对齐到完全相同的 judge prompt 和聚合逻辑,但那就不再是独立工具的横评了。
+
+推论直接影响选工具的决策逻辑:如果你团队在做 LLM eval CI,选工具不是选"哪家最准",而是选"我团队对回退的定义和这家工具的判定语义最匹配"。DeepEval 的 5/10 覆盖率意味着它对轻微下滑更敏感——如果你更在乎不放过任何信号,这是一种选择。promptfoo 的 1/10 意味着它更保守——如果你的团队更怕误报打扰开发节奏,这是另一种选择。Evalith 的 bootstrap CI 提供的是统计边界,让"无信号"和"有信号"有明确的置信度区分。没有绝对正确,只有哪个语义和你的需求更匹配。
 
 ## 七、局限和下一步
 
-<TODO §7 limitations + article 3 promise — Task 14>
+几个需要诚实说清楚的边界:
+
+1. **n=10 cases 是小样本。** 这整篇是 lower bound 演示,不是 LLM eval 工具的全面性能基准。10 道题只能说明"在这类开放式技术问答上,三家工具在噪声处理和判定语义上存在分歧"——不能泛化成"哪家工具更好"的结论。横评结论请别过度解读。
+
+2. **prompt 偏差注入是人为的。** `Be very concise. 1-2 short sentences.` 是一条教学场景的合成回退,真实业务里的质量下滑可能隐蔽得多——模型版本静默升级、上下文长度悄悄裁剪、retrieval 召回率下降。即便如此,"教学难度"的注入让三个工具给出了三种不同的 verdict,说明信号可识别性本身不是瓶颈,工具语义才是。如果换成更隐蔽的回退,分歧只会更大,不会更小。
+
+3. **judge 与被评模型同源,存在亲缘偏差。** 同一个 deepseek-chat 既出答案又评分,是 affinity-bias 的标准场景——模型倾向于给自己风格接近的答案打高分。第三篇会用 GPT-4o-mini 当第三方 judge 在同一份 dataset 上跑一遍,看 verdict 是否大幅迁移。如果迁移幅度大,那"哪家工具在这次实验里报了几个回退"的讨论本身就要重做——因为 judge 换了,测量对象就变了。
+
+4. **统计工具栈仍然是最朴素的 percentile bootstrap。** BCa(偏置纠正加速)在样本分布偏态时比 percentile 更准;paired bootstrap 利用同 case 配对可以降低方差;FDR(假发现率控制)在 10 个 case 同时检验时能压制多重比较带来的假阳率膨胀——这些都还没进 Evalith。**第三篇会把这些一一加进 Evalith 并对照本篇的同一份 raw 数据重跑,看哪些指标实际改变,哪些只是工具箱里"听起来更高级"的东西。** 你可以把本篇的结果当基线,第三篇的结果当对照。
+
+5. **横评只跑了三家。** Ragas 专门针对 RAG 评测、OpenAI Evals 深度绑定 OpenAI 接口——两家的 scope 和这次实验不可比,所以没接入,§5 开头已说明理由。dev.to / Show HN 的英文版会单独做,工具范围和实验设计会相应调整。
 
 ---
 
-如果你也在做 LLM eval 或 AI CI 集成,欢迎到 **[github.com/dominciyue/Evalith_MingJing](https://github.com/dominciyue/Evalith_MingJing)** 提 issue / PR。
+如果你也在做 LLM eval 或 AI CI 集成,欢迎到 [github.com/dominciyue/Evalith_MingJing](https://github.com/dominciyue/Evalith_MingJing) 提 issue / PR。
 
 ```bash
 pip install evalith
