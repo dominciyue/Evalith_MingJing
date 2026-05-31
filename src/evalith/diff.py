@@ -16,9 +16,27 @@ def _case_samples(r: CaseResult) -> list[float]:
 
 
 def bootstrap_diff_ci(before: list[float], after: list[float], *,
+                      method: str = "percentile",
                       n_resamples: int = 1000, alpha: float = 0.05,
                       seed: int = 0) -> tuple[float, float]:
-    """Percentile bootstrap CI on (mean(after) - mean(before)). Deterministic via seed."""
+    """Bootstrap CI on (mean(after) - mean(before)).
+
+    method: "percentile" (v0.4 default), "bca", or "paired".
+    Deterministic via seed."""
+    if method not in {"percentile", "bca", "paired"}:
+        raise ValueError(f"unknown method: {method!r}; expected percentile|bca|paired")
+    if method == "percentile":
+        return _bootstrap_percentile(before, after, n_resamples=n_resamples, alpha=alpha, seed=seed)
+    if method == "bca":
+        return _bootstrap_bca(before, after, n_resamples=n_resamples, alpha=alpha, seed=seed)
+    # paired
+    return _bootstrap_paired(before, after, n_resamples=n_resamples, alpha=alpha, seed=seed)
+
+
+def _bootstrap_percentile(before: list[float], after: list[float], *,
+                          n_resamples: int = 1000, alpha: float = 0.05,
+                          seed: int = 0) -> tuple[float, float]:
+    """Percentile bootstrap — v0.4 behavior, preserved exactly."""
     rng = random.Random(seed)
     n_b, n_a = len(before), len(after)
     diffs: list[float] = []
@@ -30,6 +48,18 @@ def bootstrap_diff_ci(before: list[float], after: list[float], *,
     lo_idx = int(n_resamples * alpha / 2)
     hi_idx = min(n_resamples - 1, int(n_resamples * (1 - alpha / 2)))
     return diffs[lo_idx], diffs[hi_idx]
+
+
+def _bootstrap_bca(before: list[float], after: list[float], *,
+                   n_resamples: int = 1000, alpha: float = 0.05,
+                   seed: int = 0) -> tuple[float, float]:
+    raise NotImplementedError("BCa lands in Task 4")
+
+
+def _bootstrap_paired(before: list[float], after: list[float], *,
+                      n_resamples: int = 1000, alpha: float = 0.05,
+                      seed: int = 0) -> tuple[float, float]:
+    raise NotImplementedError("paired lands in Task 5")
 
 
 @dataclass

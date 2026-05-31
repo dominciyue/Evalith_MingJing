@@ -80,3 +80,14 @@ def test_diff_carries_before_after_output():
     c = report.regressed[0]
     assert c.before_output == "four"
     assert c.after_output == "five"
+
+
+def test_bootstrap_diff_ci_method_percentile_matches_v04_default():
+    """Passing method='percentile' explicitly must be byte-identical to v0.4 default."""
+    from evalith.diff import bootstrap_diff_ci
+    before = [1.0, 1.0, 0.0, 1.0, 0.0]
+    after = [0.0, 1.0, 0.0, 0.0, 0.0]
+    lo_default, hi_default = bootstrap_diff_ci(before, after, seed=42)
+    lo_explicit, hi_explicit = bootstrap_diff_ci(before, after, method="percentile", seed=42)
+    assert lo_default == lo_explicit
+    assert hi_default == hi_explicit
