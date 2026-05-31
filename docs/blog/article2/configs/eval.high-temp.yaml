@@ -7,5 +7,5 @@ concurrency: 3
 scorers:
   - type: llm_judge
     params:
-      criteria: "回答是否充分覆盖了核心概念、解释清楚、且没有跑题或显著省略。完整覆盖给 1.0,部分覆盖给 0.5 左右,严重缺失或跑题给 0.0。"
+      criteria: "回答必须充分解释问题涉及的多个核心概念。如果回答过短(少于 80 字)或仅触及一个方面而忽略其它核心概念,给 score=0.0 且 pass=false。覆盖部分概念但解释不够给 score=0.3-0.5 且 pass=false。充分覆盖且解释清晰给 score=0.9-1.0 且 pass=true。"
       language: zh
