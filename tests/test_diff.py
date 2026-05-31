@@ -138,3 +138,35 @@ def test_bootstrap_bca_is_deterministic():
     a = bootstrap_diff_ci(before, after, method="bca", seed=7)
     b = bootstrap_diff_ci(before, after, method="bca", seed=7)
     assert a == b
+
+
+def test_bootstrap_paired_reduces_variance_vs_unpaired_on_correlated_data():
+    """When before/after pass rates are strongly correlated (same case across runs),
+    paired bootstrap CI should be narrower than unpaired."""
+    from evalith.diff import bootstrap_diff_ci
+
+    # Correlated data: cases with hardness — case 0 always near 1, case 4 always near 0
+    before = [1.0, 0.8, 0.6, 0.4, 0.2]
+    after  = [0.9, 0.7, 0.5, 0.3, 0.1]  # uniform 0.1 shift, same per-case rank
+
+    lo_p, hi_p = bootstrap_diff_ci(before, after, method="paired", n_resamples=2000, seed=0)
+    lo_u, hi_u = bootstrap_diff_ci(before, after, method="percentile", n_resamples=2000, seed=0)
+
+    width_paired = hi_p - lo_p
+    width_unpaired = hi_u - lo_u
+    assert width_paired < width_unpaired, \
+        f"paired should be narrower; paired width={width_paired:.3f} unpaired={width_unpaired:.3f}"
+
+
+def test_bootstrap_paired_requires_equal_length():
+    from evalith.diff import bootstrap_diff_ci
+    import pytest as pt
+    with pt.raises(ValueError):
+        bootstrap_diff_ci([1.0, 0.0], [1.0, 0.0, 1.0], method="paired")
+
+
+def test_bootstrap_paired_is_deterministic():
+    from evalith.diff import bootstrap_diff_ci
+    a = bootstrap_diff_ci([1.0, 0.0, 1.0], [0.0, 1.0, 0.0], method="paired", seed=3)
+    b = bootstrap_diff_ci([1.0, 0.0, 1.0], [0.0, 1.0, 0.0], method="paired", seed=3)
+    assert a == b

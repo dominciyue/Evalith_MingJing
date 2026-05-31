@@ -134,7 +134,24 @@ def _bootstrap_bca(before: list[float], after: list[float], *,
 def _bootstrap_paired(before: list[float], after: list[float], *,
                       n_resamples: int = 1000, alpha: float = 0.05,
                       seed: int = 0) -> tuple[float, float]:
-    raise NotImplementedError("paired lands in Task 5")
+    """Paired bootstrap CI on mean(after - before).
+
+    Requires len(before) == len(after). Resamples case indices (with replacement),
+    then computes Δᵢ = after[i] - before[i] for each chosen i and takes the mean.
+    Reduces variance when before/after are correlated through a shared case dimension."""
+    if len(before) != len(after):
+        raise ValueError(f"paired bootstrap requires equal lengths; got before={len(before)} after={len(after)}")
+    n = len(before)
+    rng = random.Random(seed)
+    diffs: list[float] = []
+    for _ in range(n_resamples):
+        idxs = [rng.randrange(n) for _ in range(n)]
+        mean_delta = sum(after[i] - before[i] for i in idxs) / n
+        diffs.append(mean_delta)
+    diffs.sort()
+    lo_idx = int(n_resamples * alpha / 2)
+    hi_idx = min(n_resamples - 1, int(n_resamples * (1 - alpha / 2)))
+    return diffs[lo_idx], diffs[hi_idx]
 
 
 @dataclass
