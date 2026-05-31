@@ -1,0 +1,62 @@
+[
+  {
+    "case_id": "explain-rlhf",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "RLHF（Reinforcement Learning from Human Feedback）是一种将人类偏好融入模型训练的技术，核心目的是让语言模型生成的内容更符合人类的真实意图、伦理判断和实用性，而不仅仅是模仿训练数据中的统计模式。传统的监督学习（如预测下一个词）容易导致模型生成有偏见、有害或缺乏事实依据的回答，RLHF 则通过人类对模型输出的直接反馈来纠正这些问题。典型流程包括：首先用监督"
+  },
+  {
+    "case_id": "explain-vector-db",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "向量数据库与传统关系型数据库的核心区别在于数据模型与查询方式：前者专为存储和检索高维向量（如嵌入向量）设计，通过近似最近邻（ANN）算法实现语义相似度搜索；而后者基于二维表格存储结构化数据，依赖精确的键值或布尔条件匹配。此外，向量数据库通常缺乏关系型数据库的事务（ACID）支持，但优化了大规模并行计算能力以应对非结构化数据。在 LLM 应用栈中，向量数据库的典型作用是作为外部知识库，将文档、对话历"
+  },
+  {
+    "case_id": "sql-injection-vulnerability",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "这段代码存在 **SQL 注入** 漏洞。当用户输入的 `name` 参数包含恶意 SQL 语句（例如 `' OR '1'='1`）时，攻击者可绕过验证并获取所有用户数据甚至删除数据。修复方法是使用 **参数化查询** 或 **预编译语句**，例如在 Python 中改用 `cursor.execute(\"SELECT * FROM users WHERE name = %s\", (name,))"
+  },
+  {
+    "case_id": "k8s-configmap-vs-secret",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "ConfigMap 用于存储非敏感配置数据（如环境变量、配置文件等），而 Secret 专门存储敏感信息（如密码、密钥、证书等），并对数据进行了编码或加密处理。选择依据主要取决于数据的敏感程度：如果数据需要保密或受到访问控制，应使用 Secret；否则使用 ConfigMap。此外，Secret 支持更细粒度的权限管理和加密选项，而 ConfigMap 更适合公开的配置。通常，避免将敏感信息放入 "
+  },
+  {
+    "case_id": "asyncio-yield-deadlock",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "在 asyncio 协程中调用 `time.sleep(1)` 会阻塞整个事件循环线程，导致所有其他协程都无法继续执行，直到该睡眠结束。这是因为 `time.sleep` 是同步阻塞函数，它会让当前线程挂起，而 asyncio 的事件循环正是运行在这个线程上的。正确的做法是使用 `await asyncio.sleep(1)`，它会让出控制权给事件循环，让其他协程有机会运行。同步阻塞操作会破坏 a"
+  },
+  {
+    "case_id": "python-gil-tradeoffs",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "Python 的 **GIL（全局解释器锁）** 是 CPython 解释器中的一个互斥锁，它确保同一时刻只有一个线程能执行 Python 字节码。对于 **CPU 密集型任务**，GIL 会严重限制并行性，导致多线程代码实际上只能单核运行，性能甚至可能低于单线程（因线程切换开销）。常见的绕开方式包括：使用 **`multiprocessing` 模块**（通过多进程而非多线程实现真正的并行）、采"
+  },
+  {
+    "case_id": "redis-cluster-failover",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "当Redis Cluster中的主节点宕机后，其从节点会通过内部的心跳检测感知到主节点失联。接着，集群中持有投票权的其他主节点会发起并参与Raft风格的故障转移选举，从该宕机主节点的多个从节点中选出一个从节点升级为新的主节点。新主节点当选后，会向集群中的其他节点广播自己的身份变更，并立即接管原主节点的哈希槽。此后，当客户端请求访问被迁移的槽时，对应的节点会返回`MOVED`重定向错误，告知客户端去"
+  },
+  {
+    "case_id": "tcp-congestion-control",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "在 TCP 拥塞控制中，慢启动阶段的核心策略是“指数增长”，每收到一个 ACK 确认，拥塞窗口（cwnd）就增加 1 MSS，从而每经过一个 RTT 窗口大小翻倍，旨在快速探测网络容量。而拥塞避免阶段的核心策略是“线性增长”，每经过一个 RTT，cwnd 仅增加 1 MSS，增长速率平缓，以避免快速填满缓冲区并引发丢包。两者的关键转折点是慢启动阈值（ssthresh）：当 cwnd < ssthr"
+  },
+  {
+    "case_id": "jwt-vs-session",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "JWT 与 Session 的核心权衡在于**状态存储位置**与**可撤销性**。Session 将用户状态存储在服务端内存或数据库，服务端可通过销毁 session 记录轻松实现主动登出或踢人，但需要额外的存储同步机制来应对分布式部署。JWT 将状态编码在客户端持有的令牌中，无需服务端存储，天然支持水平扩展，但一旦签发便无法被服务端主动撤销，必须等待令牌自然过期。因此，Session 更适合对安"
+  },
+  {
+    "case_id": "transformer-attention",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "Transformer 中的 self-attention 机制通过计算序列中每个位置与其他位置的关联权重来捕捉全局依赖。它首先将输入分别映射为查询（Q）、键（K）和值（V）三个矩阵：Q用于匹配其他位置，K用于被匹配，V则携带实际需要被聚合的信息。通过Q与K的点积计算注意力分数，再经softmax归一化得到权重，最后用这些权重对V进行加权求和。因此，Q和K共同决定了“关注哪里”，而V决定了“提取什"
+  }
+]

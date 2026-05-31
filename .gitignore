@@ -31,3 +31,6 @@ node_modules/
 .idea/
 .vscode/
 .DS_Store
+
+# DeepEval runtime cache
+.deepeval/

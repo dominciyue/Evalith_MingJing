@@ -1,0 +1,62 @@
+[
+  {
+    "case_id": "explain-rlhf",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "RLHF 是一种通过人类反馈来微调语言模型的技术，使其输出更符合人类偏好。它之所以必要，是因为单纯依靠无监督学习生成的文本可能不够有用、安全或符合价值观。典型流程包括：先收集人类对模型输出的偏好比较数据，训练一个奖励模型来预测人类评分，再用强化学习（如PPO算法）基于该奖励模型优化策略模型，从而提升回答质量。"
+  },
+  {
+    "case_id": "explain-vector-db",
+    "pass_rate": 0.2,
+    "samples": 5,
+    "first_output_preview": "向量数据库以嵌入向量为核心，支持近似最近邻搜索，适合非结构化数据的高维语义匹配；传统关系型数据库基于精确匹配和结构化表格，依赖索引和SQL查询。在LLM应用中，向量数据库负责存储和检索知识库的语义向量，实现长记忆、外挂知识库和上下文增强，以缓解模型幻觉并提升回答准确性。"
+  },
+  {
+    "case_id": "sql-injection-vulnerability",
+    "pass_rate": 0.6,
+    "samples": 5,
+    "first_output_preview": "当`name`参数包含SQL特殊字符（如单引号`'`或`--`）时，此代码可被SQL注入攻击。攻击者可通过构造输入（如`' OR '1'='1`）操纵查询。修复方案：使用参数化查询，例如`db.query(\"SELECT * FROM users WHERE name = ?\", [name])`；对输入进行转义或限制字符集也能辅助防御。永远不要直接拼接用户输入到SQL语句中。"
+  },
+  {
+    "case_id": "k8s-configmap-vs-secret",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "ConfigMap 存储非敏感配置数据（如明文环境变量），Secret 存储敏感数据（如密码、密钥），后者默认用 Base64 编码并支持加密。  \n选择依据：若数据需要保密或包含凭据，用 Secret；否则用 ConfigMap。  \n此外，Secret 可启用更严格的 RBAC 控制与加密机制，而 ConfigMap 设计上更简洁。  \n两者都支持挂载为卷或注入为环境变量，但 Secret 在"
+  },
+  {
+    "case_id": "asyncio-yield-deadlock",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "`time.sleep(1)` 会阻塞整个线程，暂停所有协程的执行，无法实现并发。因为它是一个同步阻塞调用，与 asyncio 的事件循环机制冲突——事件循环需要非阻塞地切换任务。正确做法是使用 `await asyncio.sleep(1)` 主动让出控制权给事件循环。"
+  },
+  {
+    "case_id": "python-gil-tradeoffs",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "Python 的 GIL（全局解释器锁）是一个互斥锁，确保同一时刻只有一个线程执行 Python 字节码。对于 CPU 密集型多线程任务，GIL 会阻止多核并行，导致性能甚至不如单线程。常见绕开方式包括使用多进程（`multiprocessing` 模块）替代多线程，或利用 C 扩展（如 NumPy）释放 GIL，以及采用异步编程（`asyncio`）处理 I/O 密集型任务。"
+  },
+  {
+    "case_id": "redis-cluster-failover",
+    "pass_rate": 0.6,
+    "samples": 5,
+    "first_output_preview": "从节点通过集群中多数主节点授权完成选举晋升为新主。客户端访问宕机节点时，返回 `MOVED` 或 `ASK` 重定向错误，引导客户端连接新的主节点槽位。"
+  },
+  {
+    "case_id": "tcp-congestion-control",
+    "pass_rate": 0.6,
+    "samples": 5,
+    "first_output_preview": "慢启动阶段每收到一个ACK，拥塞窗口指数增长（每RTT翻倍）；拥塞避免阶段每收到一个ACK，窗口线性增长（每RTT加1）。慢启动用于快速探测网络容量，以ssthresh为界；拥塞避免在接近瓶颈时谨慎增加。核心区别是增长速率不同：指数vs线性。慢启动从cwnd=1开始，拥塞避免则在达到ssthresh后触发。两者共同构成拥塞控制的窗口调整机制。"
+  },
+  {
+    "case_id": "jwt-vs-session",
+    "pass_rate": 1.0,
+    "samples": 5,
+    "first_output_preview": "JWT将认证状态编码在客户端令牌中，无需服务端存储会话，天然支持跨服务与分布式；传统Session依赖服务端内存或数据库存储，状态集中但扩展需共享存储。核心权衡在于：JWT牺牲即时撤销能力（令牌签发后直到过期前均有效），换取无状态与水平扩展的便利；传统Session可随时销毁会话，但带来同步开销与单点压力。JWT的签名防篡改机制避免数据库查询，却因令牌体积增大增加带宽消耗；Session通常仅传输"
+  },
+  {
+    "case_id": "transformer-attention",
+    "pass_rate": 0.6,
+    "samples": 5,
+    "first_output_preview": "Self-attention计算序列中每个位置与其他所有位置的关联权重，通过三个可学习矩阵将输入映射为Query、Key和Value。Query与所有Key的点积经softmax得到注意力分数，再对Value加权求和得到输出。Q负责“询问”其他位置的相关性，K负责“标识”自身被匹配的特征，V负责携带实际需要传递的信息。"
+  }
+]
