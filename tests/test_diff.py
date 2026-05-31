@@ -91,3 +91,50 @@ def test_bootstrap_diff_ci_method_percentile_matches_v04_default():
     lo_explicit, hi_explicit = bootstrap_diff_ci(before, after, method="percentile", seed=42)
     assert lo_default == lo_explicit
     assert hi_default == hi_explicit
+
+
+def test_bootstrap_bca_matches_scipy_within_tolerance():
+    """BCa CI bounds should be close (~0.10) to scipy.stats.bootstrap with method='BCa'.
+    We don't expect bit-equivalence — scipy uses numpy RNG, we use stdlib. But the
+    BCa-corrected bounds should be in the same ballpark on the same data."""
+    import numpy as np
+    from scipy.stats import bootstrap as scipy_bootstrap
+    from evalith.diff import bootstrap_diff_ci
+
+    # Article 2's redis-cluster-failover noisy case
+    before = [0.0, 1.0, 1.0, 1.0, 1.0]
+    after  = [0.0, 0.0, 0.0, 0.0, 0.0]
+
+    # Our implementation
+    lo_ours, hi_ours = bootstrap_diff_ci(before, after, method="bca",
+                                          n_resamples=2000, seed=0)
+
+    # scipy ground truth — paired=False (independent samples)
+    def diff_means(b, a, axis=-1):
+        return np.mean(a, axis=axis) - np.mean(b, axis=axis)
+
+    rng = np.random.default_rng(0)
+    scipy_result = scipy_bootstrap(
+        (np.asarray(before), np.asarray(after)),
+        diff_means,
+        method="BCa",
+        n_resamples=2000,
+        paired=False,
+        random_state=rng,
+    )
+    lo_scipy = scipy_result.confidence_interval.low
+    hi_scipy = scipy_result.confidence_interval.high
+
+    # CI bounds should match within ~0.10 (different RNG streams contribute most of the gap)
+    assert abs(lo_ours - lo_scipy) < 0.10, f"BCa lo mismatch: ours={lo_ours} scipy={lo_scipy}"
+    assert abs(hi_ours - hi_scipy) < 0.10, f"BCa hi mismatch: ours={hi_ours} scipy={hi_scipy}"
+
+
+def test_bootstrap_bca_is_deterministic():
+    """Same input + same seed → same CI."""
+    from evalith.diff import bootstrap_diff_ci
+    before = [1.0, 1.0, 0.0, 1.0, 0.0]
+    after = [0.0, 0.0, 1.0, 0.0, 0.0]
+    a = bootstrap_diff_ci(before, after, method="bca", seed=7)
+    b = bootstrap_diff_ci(before, after, method="bca", seed=7)
+    assert a == b
