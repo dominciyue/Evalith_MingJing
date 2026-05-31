@@ -60,7 +60,7 @@ judge 用同一个 deepseek-chat,但 temperature=0——这是 Evalith llm\_judg
 
 三个工具共用的 judge criteria 字符串完全相同——不是"表意一样",是字节级相同:
 
-> 回答必须充分解释问题涉及的多个核心概念,包括关键机制、适用场景或对比维度。仅给出结论或只列举步骤而不解释原理的回答不应得满分。
+> 回答必须充分解释问题涉及的多个核心概念。如果回答过短(少于 80 字)或仅触及一个方面而忽略其它核心概念,给 score=0.0 且 pass=false。覆盖部分概念但解释不够给 score=0.3-0.5 且 pass=false。充分覆盖且解释清晰给 score=0.9-1.0 且 pass=true。
 
 这是横评公平性的核心保障。三个工具的 judge 调用方式、prompt 模板、聚合逻辑各不相同——但这是变量,不是噪声。我们控制的是"评分标准",让它不成为三家分歧的来源。所有配置文件公开在 `docs/blog/article2/configs/`。
 
@@ -111,7 +111,7 @@ bootstrap CI 给出 [-0.80, +0.40],跨过 0,判 unchanged。这才是正确的�
 
 ### 在看到数据之前,我先把假设写在这里
 
-把 baseline prompt 加一句 `Assume the user is a senior engineer who knows the basics. Skip foundational explanations and focus on the non-obvious parts. Be concise:`,我**事先**预测哪些 case 会被这条隐式偏差打中:
+把 baseline prompt 替换成 `Be very concise. Answer in 1-2 short sentences. Skip explanations and concept enumeration: {{input}}`,我**事先**预测哪些 case 会被这条隐式偏差打中:
 
 **应该被命中(judge 因"概念缺失"扣分):**
 - `explain-rlhf` — "SFT → reward model → PPO" 这条主线本身就属于"基础",会被跳过
