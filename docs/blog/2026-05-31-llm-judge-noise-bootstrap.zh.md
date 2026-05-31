@@ -138,7 +138,79 @@ Evalith bootstrap 确认回退(regressed):**`redis-cluster-failover`、`sql-inje
 
 ## 五、同台对照:promptfoo / DeepEval 跑同一套
 
-<TODO §5 prose + cross-tool table — Task 11/12>
+### 横评公平性框架
+
+这一节用同一套数据,同时跑了三个工具:Evalith、promptfoo、DeepEval。公平性边界严格对齐:同一份 10 条 dataset,同一个模型(DeepSeek)加同一个 temperature=1.0,同一份 judge criteria 字符串,同一份隐式偏差 prompt 注入(B 组)。三个工具之间唯一的变量,是**如何调用 judge、如何对分数打分、如何把多次采样聚合成最终结论**。所有配置文件公开在 `docs/blog/article2/configs/`,raw outputs 在 `docs/blog/article2/raw/`,一行命令可复现。
+
+### 每 case 三方判定总表
+
+| case | A1 mean (E / pf / De) | B mean (E / pf / De) | Evalith bootstrap |
+|---|---|---|---|
+| `explain-rlhf` | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 | unchanged |
+| **`explain-vector-db`** | 1.00 / 1.00 / 1.00 | 0.60 / 1.00 / 0.20 | unchanged |
+| **`sql-injection-vulnerability`** | 1.00 / 1.00 / 1.00 | 0.40 / 0.60 / 0.60 | regressed |
+| `k8s-configmap-vs-secret` | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 | unchanged |
+| **`asyncio-yield-deadlock`** | 1.00 / 1.00 / 1.00 | 0.60 / 1.00 / 1.00 | unchanged |
+| `python-gil-tradeoffs` | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 | unchanged |
+| **`redis-cluster-failover`** | 0.80 / 1.00 / 1.00 | 0.00 / 1.00 / 0.60 | regressed |
+| **`tcp-congestion-control`** | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 0.60 | unchanged |
+| `jwt-vs-session` | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 | unchanged |
+| **`transformer-attention`** | 1.00 / 1.00 / 1.00 | 1.00 / 0.80 / 0.60 | unchanged |
+
+列标注:E = Evalith,pf = promptfoo,De = DeepEval。B mean < 0.8 的 case 粗体标注。
+
+### 三个工具,同一份数据,三种故事
+
+把三家的"B mean < 0.8"集合各自列出来,就能看清楚分歧有多大:
+
+- **Evalith bootstrap(严格,CI 完全在 0 以下):** `sql-injection-vulnerability`、`redis-cluster-failover` — **2/10**
+- **Evalith(放宽,B mean < 0.8):** `sql-injection-vulnerability`、`redis-cluster-failover`、`asyncio-yield-deadlock`、`explain-vector-db` — **4/10**
+- **promptfoo(B mean < 0.8):** `sql-injection-vulnerability` — **1/10**
+- **DeepEval(B mean < 0.8):** `sql-injection-vulnerability`、`redis-cluster-failover`、`explain-vector-db`、`tcp-congestion-control`、`transformer-attention` — **5/10**
+
+归类之后,有四种模式:
+
+**三家全部命中(可信程度最高):** 只有 `sql-injection-vulnerability` 一个。所有工具在 B 组都看到了这条 case 下滑,不管评分逻辑多么不同,结论一致。如果只能相信一个回退结论,就是这个。
+
+**两方一致命中(较可信):** Evalith 和 DeepEval 都抓到了 `redis-cluster-failover`(Evalith: 0.80 → 0.00,DeepEval: 1.00 → 0.60)和 `explain-vector-db`(Evalith: 1.00 → 0.60,DeepEval: 1.00 → 0.20)。promptfoo 在这两条上都给出 1.00,没有任何下滑信号。两家同意、一家不同意。
+
+**单方独立标记:** DeepEval 额外抓到了 `tcp-congestion-control` 和 `transformer-attention`——Evalith 和 promptfoo 在这两条上都判 unchanged,B mean 均为 1.00。只有 DeepEval 在这两条上给出了低于 0.8 的分数。反过来,Evalith(放宽标准)抓到了 `asyncio-yield-deadlock`(0.60),DeepEval 和 promptfoo 都说 unchanged。
+
+**promptfoo 是三家里最保守的:** 10 个 case 里只标记了 1 个。这不一定是坏事——少报警也意味着少打扰开发者——但它放过了所有其他工具都发现了问题的那些 case。
+
+### 为什么同一份 judge 会给出三种答案
+
+三个工具共用的是同一个 judge 模型和同一份 criteria 字符串,但**调用 judge 的方式本质上不同**。
+
+promptfoo 的 `llm-rubric` 在内部有自己的 prompt 模板,默认倾向于二元判断("通过 / 不通过"),对"看起来合理但不完整"的短回答更容易给过;它在 `redis-cluster-failover` 上给出了 1.00,而实际上 B 组的输出只有 101 字且流程严重截断——这说明 promptfoo 默认模板在"完整性"这个维度上的敏感度较低。
+
+DeepEval 的 `GEval` 是带 chain-of-thought 的 weighted scoring,judge 先逐步推理再打分,对"短回答 / 信息缺失"的惩罚更重——这解释了为什么它额外标记了 `transformer-attention` 和 `tcp-congestion-control`:这两条的 B 组输出字数有限,GEval 的推理链更容易发现"某个关键点没有被展开"。
+
+Evalith 的做法是直接让 judge 给出 score + pass,然后对多次采样的 pass_rate 做 bootstrap 置信区间,在均值差值上判断统计显著性。它的判定逻辑是"均值差值的 CI 是否完全低于 0",而不是"pass rate 是否超过某个阈值"。
+
+同一个评分目标,落实到三套不同的 prompt engineering 和聚合机制,verdict 就会分叉。这是结构性的,不是 bug,也不能靠调参消除——除非三家对齐到完全相同的 judge prompt,但那就不再是"三个工具的横评"了。
+
+### 诚实地承认:这场对照里 Evalith 不"赢"
+
+没有 ground truth,无法说哪个工具最准。
+
+三家一致判定的 `sql-injection-vulnerability` 大概率是真回退。但其余意见分歧的 case——比如 `tcp-congestion-control` 和 `transformer-attention` 是否真的下滑了——谁对谁错全凭信念,不凭数据。DeepEval 说 yes,Evalith 和 promptfoo 说 no,我们没有独立的真相可以裁决。
+
+如果说这场对照有什么发现,那是:**同一个评测问题,用不同工具会得出不同结论**。这是 LLM eval 这个领域最难看清楚的一点——不是"哪个工具更好",而是"你以为在测同一件事,其实不是"。
+
+Evalith 有一个其他两家没有汇报的数据点:A1 vs A2 假阳率为 0/10。这是因为 Evalith 是唯一跑了两份 baseline 的工具,promptfoo 和 DeepEval 只跑了一份 baseline,所以它们的"假阳率"这个指标根本就是缺失的,而不是零。bootstrap CI 让"无信号"和"有信号"有了清晰的统计边界,这是 Evalith 的具体贡献。
+
+但 DeepEval 在"轻微下滑"上更敏感,如果你更在乎不放过任何下滑信号,它的 5/10 覆盖率是一种选择。promptfoo 在"避免噪声报警"上最保守,如果你的团队更怕误报,它的 1/10 是另一种选择。各有价值,没有绝对正确。
+
+### promptfoo 和 DeepEval 在哪些方面强于 Evalith
+
+这里需要直说:在分发量、社区生态、scorer 种类、UI 体验这几个维度上,promptfoo 和 DeepEval 目前仍然遥遥领先于 Evalith。
+
+promptfoo 有成熟的 web UI、数十种内置 scorer(包括语义相似度、毒性检测、代码执行正确性等)、完善的 CI/CD 集成文档和活跃的社区。DeepEval 有 Confident AI 云平台、丰富的评测维度(faithfulness、contextual precision、hallucination 等)以及对 RAG 评测的原生支持。这两个工具在 LLM eval 生态里处于主流位置是有道理的。
+
+Evalith 不是要取代它们。Evalith 目前补的那一块是:**基于 bootstrap 置信区间的统计显著性 CI gate**——当你需要的不是"打分",而是"这两份 config 之间的差值是否在统计上显著",那是 Evalith 专门设计的场景。
+
+一个可能合理的组合姿势:用 promptfoo 起步做日常 eval,熟悉各种 scorer 和 UI;在 CI 阶段需要阻断 PR 时,用 Evalith 的 bootstrap CI 做最终裁决,避免把采样噪声引起的均值漂移误判为质量回退。两者互补,不互斥。
 
 ## 六、这告诉我们什么
 
