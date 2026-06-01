@@ -30,7 +30,30 @@
 
 ## 二、BCa: 修偏与加速
 
-<TODO §2 — Task 17>
+Percentile bootstrap 直接切 bootstrap 分布的第 α/2 和第 1-α/2 分位数,在分布对称时没问题。当分布偏态,分位数切出来的区间会往偏的那侧倾斜,不补偿这个偏置。BCa 加了两个修正:`z₀` 衡量观察统计量在 bootstrap 分布里的相对位置并把边界往中心扳,`a` 用 jackknife 估计分布的二阶弯曲度。两项合在一起,让 CI 在小样本、偏态场景下更接近名义覆盖率。
+
+Evalith v0.5 的 BCa 是纯标准库实现:`statistics.NormalDist` 提供 Φ/Φ⁻¹,jackknife 在 A1∪B union 样本上逐次删一跑。dev extras 里挂 `scipy.stats.bootstrap(method='BCa')` 作 ground truth;在 redis-cluster-failover 这类噪声 fixture 上,两者 CI 边界差 < 0.10。
+
+**文章 2 frozen raw 的 BCa 与 percentile 对照:**
+
+| case | percentile CI | BCa CI |
+|---|---|---|
+| `explain-rlhf` | [+0.00, +0.00] | [+0.00, +0.00] |
+| `explain-vector-db` | [-0.80, +0.00] | [-0.80, +0.00] |
+| `sql-injection-vulnerability` | [-1.00, -0.20] | [-1.00, -0.20] |
+| `k8s-configmap-vs-secret` | [+0.00, +0.00] | [+0.00, +0.00] |
+| `asyncio-yield-deadlock` | [-0.80, +0.00] | [-0.80, +0.00] |
+| `python-gil-tradeoffs` | [+0.00, +0.00] | [+0.00, +0.00] |
+| `redis-cluster-failover` | [-1.00, -0.40] | [-1.00, -0.20] |
+| `tcp-congestion-control` | [+0.00, +0.00] | [+0.00, +0.00] |
+| `jwt-vs-session` | [+0.00, +0.00] | [+0.00, +0.00] |
+| `transformer-attention` | [+0.00, +0.00] | [+0.00, +0.00] |
+
+9 行 CI 完全一样。这批 case 的 bootstrap 分布要么是单点(Δ=0,零方差),要么对称;z₀ 和 a 都接近 0,修正量可以忽略。
+
+唯一有漂移的是 `redis-cluster-failover`。Percentile 上界 `-0.40`,**BCa 上界移到 `-0.20`**。A1 mean 0.80、B mean 0.00,bootstrap 差值大量落在 -1.00 附近、上端稀疏,是单边偏态;z₀ 把边界往 0 拉了一段。CI 仍然完全在 0 以下,verdict 不变,还是 **regressed**。
+
+**预测 1** 说"BCa 大概不会显著改变 verdict"。结果吻合:回归集合与 percentile 完全相同,{sql-injection-vulnerability, redis-cluster-failover},2/10。教材说"小样本时 BCa 比 percentile 准"指的是覆盖率准确性,预测 1 说的是 verdict 层。CI 边界移了,判定没变,两件事都成立。
 
 ## 三、Paired bootstrap: 利用 case 内相关性降方差
 
