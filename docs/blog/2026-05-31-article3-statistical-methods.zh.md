@@ -238,7 +238,19 @@ judge identity 的影响力远超统计方法。swap A 的 flagged 集合与 bas
 
 ## 七、局限和第四篇方向
 
-<TODO §7 — Task 22>
+几个需要说清楚的边界:
+
+1. n=10 是小样本。BCa 的 acceleration 估计本身有方差;FDR 的 power 也有限。结论别从 10 个 case 外推到任意 eval 场景。
+
+2. judge temp=1 vs 原定 temp=0。§5 已交代,再提一次:gpt-5-mini 被代理强制跑在 temp=1,原定 gpt-4o-mini at temp=0 没拿到。swap A 因此混了 judge family 差异和 judge 温度噪声两件事,不是干净的单变量实验。
+
+3. **swap A 用的是单次 trial 输出。** article 2 engine 只存 trial-0;swap A 的 5 次 judge 全在同一份回答上跑。捕获的是 judge 自身抖动,不是"model 抖 × judge 抖"的两层噪声。完整两层噪声需要 evalith 存所有 trial 输出,article 4 工程方向。
+
+4. 三方 judge 只跑了一个。1 个非 deepseek judge 只能说"换了一次,verdict 变了",不能说"跨多种 judge 都跑成这样"。article 4 会接入 Claude,至少多看一家。
+
+5. **这是 article 2 的同一份数据。** 跨方法对照干净,但跨数据集泛化 0 验证。100 case + 多领域 dataset 在 article 4 / arXiv preprint 中扩。
+
+article 4 方向:per-case `expected_concepts` 注入 judge prompt(article 2 §3 发现 evalith llm_judge 没用 dataset 里的字段,article 4 修);Claude / Qwen 各做一次 cross-judge,从"换 1 个"变成"看 verdict 分布";dataset 从 10 扩到 50-100 case 跨多领域;adaptive sampling 根据 CI 收敛动态停止,降 eval 成本。
 
 ---
 
