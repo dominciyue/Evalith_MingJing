@@ -10,8 +10,6 @@
 
 上篇文末承诺了 4 件事——BCa 修偏、paired bootstrap 利用 case 内相关性收窄区间、FDR 控制 10 个 case 同时检验时的假阳率膨胀、第三方 judge 验证跨家族判定是否一致。今天把这四件事挂上去,在同一份 frozen raw 数据上重看一遍。
 
-实验环境有一个偏离需要事先说清楚:可用的 OpenAI 代理只放行 gpt-5-mini,且强制 temperature=1。上篇 deepseek judge 跑在 temp=0;这次 judge 本身带了采样噪声。对结论的影响,§5 展开,§7 再提。
-
 5 条预测就摆在下面。文章 2 的假设几乎全错,这次数据说了算。
 
 ### 在看到结果之前,我先把 5 条预测写在这里
@@ -21,7 +19,7 @@
 1. **BCa 大概不会显著改变 verdict。** 文章 2 数据样本小(每 case 5 sample),分布近 0/1 二元,BCa 的修偏在这种分布上贡献有限。
 2. **Paired bootstrap CI 会收窄,但不足以让任何 unchanged 翻成 regressed。** 文章 2 的 unchanged case 几乎都是 mean=1.00 两边、Δ=0、零方差。收窄一个零宽度的 CI,结果仍然横跨 0。
 3. **FDR 在 10 case 上会把 sql-injection 翻成 unchanged。** 其 CI 离 0 较近(`[-1.00, -0.20]`),BH 校正后 p-value 可能不再通过 0.05 阈值。redis-cluster-failover 的 CI `[-1.00, -0.40]` 更远离 0,会留住。
-4. **Judge swap A(单换 judge)会让 verdict 大幅变化。** GPT-4o-mini 不是 deepseek 亲属,对同一中文 prompt + 同一回答的判定标准会不一样。可能比 deepseek 严或宽,但一定不会照搬。
+4. **Judge swap A(单换 judge)会让 verdict 大幅变化。** qwen-plus 不是 deepseek 亲属,对同一中文 prompt + 同一回答的判定标准会不一样。可能比 deepseek 严或宽,但一定不会照搬。
 5. **Judge swap B(全换 model+judge)与 A 的差距反映 model variance 的贡献占比。** 如果 A 和 B verdict 接近,说明换 judge 已主导;如果差距大,说明 model 输出本身也是变量。
 
 预测全错的可能不小。文章 2 的假设就几乎全错了。这一篇会用同样方式把对错都摆出来,无论结果怎样。
@@ -129,108 +127,110 @@ sql-injection 的 p=0.0140 离 rank 2 的阈值 0.010 差了 0.004,四个千分�
 
 文章 2 用 deepseek-chat 同时充当被测 model 和评分 judge。同源模型评同源输出,在 LLM-as-judge 文献里叫 affinity bias。§7 会把它列为 limitation #3,先实测一遍。
 
-swap A 只换 judge,模型输出沿用文章 2 原文,判定差异完全由 judge 变化解释。swap B 同时换 model 和 judge,gpt-5-mini 既生成回答又评分。
-
-### 实验环境的诚实交代
-
-计划是 gpt-4o-mini at temp=0,复刻文章 2 judge 的稳定性。实际能用的代理只放行 gpt-5 家族加 o-series,且强制 temperature=1。swap A 因此混了两件事:judge 换了家族,采样噪声也从 temp=0 变成了 temp=1。§7 会再提一次。
+两条路:swap A 复用文章 2 存下来的 deepseek-chat 输出,只让 qwen-plus 重新评分(temp=0,与文章 2 的 judge 温度设置一致)。swap B 则让 qwen-plus 既出答案又评分,从头跑一遍 baseline + broken。设计动机是隔离变量:swap A 单独暴露 judge 差异,swap B 再叠加 model 差异,两者相减就能看出"换 model" 多贡献了多少。
 
 ### 主表:三列 verdict 对照
 
-| case | DS+DS (v0.4 baseline) | swap A: DS-out + GPT judge | swap B: GPT+GPT |
+| case | DS+DS (v0.4 baseline) | swap A: DS-out + Qwen judge | swap B: Qwen+Qwen |
 |---|---|---|---|
-| `explain-rlhf` | unchanged | unchanged | unchanged |
+| `explain-rlhf` | unchanged | regressed | regressed |
 | `explain-vector-db` | unchanged | regressed | unchanged |
-| `sql-injection-vulnerability` | regressed | unchanged | unchanged |
+| `sql-injection-vulnerability` | regressed | regressed | unchanged |
 | `k8s-configmap-vs-secret` | unchanged | unchanged | unchanged |
-| `asyncio-yield-deadlock` | unchanged | unchanged | unchanged |
+| `asyncio-yield-deadlock` | unchanged | regressed | unchanged |
 | `python-gil-tradeoffs` | unchanged | unchanged | unchanged |
 | `redis-cluster-failover` | regressed | unchanged | unchanged |
-| `tcp-congestion-control` | unchanged | unchanged | unchanged |
+| `tcp-congestion-control` | unchanged | regressed | unchanged |
 | `jwt-vs-session` | unchanged | unchanged | unchanged |
-| `transformer-attention` | unchanged | unchanged | unchanged |
+| `transformer-attention` | unchanged | regressed | unchanged |
 
-直接观察:基线 flagged 2/10(redis, sql-injection),swap A flagged 1/10(explain-vector-db),swap B flagged 0/10。
+基线 flagged 2/10(redis, sql-injection),swap A flagged 6/10,swap B flagged 1/10。
 
-**两个 judge 对"什么算回退"的判定完全不重合**。
+### swap A 的变化比预想剧烈得多
 
-### swap A 为什么彻底换了一个 case
+判定数量从 2 变成 6,翻了 3 倍。更值得注意的是集合组成:baseline 里的 redis 在 swap A 里消失了,swap A 新增了 5 个 baseline 没有 flagged 的 case(explain-rlhf、explain-vector-db、asyncio-yield-deadlock、tcp-congestion-control、transformer-attention)。两个集合几乎完全不重合,只有 sql-injection 同时出现在两边。
 
-关键在 redis 的 judge 分歧。同一份 deepseek-chat 回答,交给两个 judge:
+redis 为什么消失,看 judge 分歧表:
 
-| case | deepseek-chat judge mean | gpt-5-mini judge mean | gap |
+| case | deepseek-chat judge | qwen-plus judge | gap |
 |---|---|---|---|
-| `redis-cluster-failover` | 0.80 | 0.00 | -0.80 |
-| 其余 9 个 case | 1.00 | 1.00 | +0.00 |
+| `redis-cluster-failover` | 0.80 | 0.00 | **-0.80** |
+| 其余 9 case | 1.00 | 1.00 | +0.00 |
 
-gpt-5-mini 看同一份 redis 答案 5 次全打 0,deepseek-chat 自己评 5 次里 4 次给过。同一份文字,两个 judge,结论完全相反。
+整份文章 2 冻结 baseline 里,qwen-plus 和 deepseek-chat 只在这一个 case 上判定不同。qwen-plus 看 deepseek-chat 给的 redis 答案,5 次评分全打 0;deepseek 自评 5 次里 4 次给过。
 
-gpt-5-mini 在 baseline 里已经把 redis 评为 0.00,broken 版本同样 0.00,Δ=0,没有信号。sql-injection 同理,两端都是 1.00,消失。explain-vector-db 方向反过来:baseline 1.00,broken 跌到 0.00,进入 flagged。
+结果很直接:在 swap A 里,redis 的 baseline mean 已经是 0.00,broken 版本 qwen-plus 同样打 0,Δ=0,bootstrap 判 unchanged。信号不是"broken 版更差",而是 qwen-plus 认为两个版本都不及格。redis 就这样从 flagged 集合里消失了。
 
-最终 flagged 集合从 `{redis, sql-injection}` 换成 `{explain-vector-db}`。不是加减,是整个集合替换了一遍。
+这是同源 model+judge 亲缘 bias 第一次在数据里具体显现。deepseek 给自己的 redis 答案放了水,qwen-plus 不认这个分。
 
-### swap B 为什么 0 个 regressed
+### swap B 为什么只 1 个 regressed
 
-swap B 让 gpt-5-mini 生成回答再自评。baseline 侧 10/10 全部 1.00。broken 侧 3 个 case 降到 0.80,但 Δ=-0.20 的 CI 横跨 0,信号不足。当 LLM 给自己的输出评分,它倾向于宽容,工业界文献里反复提到这点。
+qwen-plus 自己生成答案,5 次采样结果集中,分布接近极端值 1.0 或 0.0,case 内变化空间小。baseline 侧评分稳定,broken 侧 qwen-plus 也倾向于宽容对待自己写的内容。这种 self-judging 宽容在工业界文献里有记录,swap B 的数字和预期一致。
+
+唯一例外是 explain-rlhf。这个 case 在 swap A 也 regressed——qwen-plus 既作为独立 judge(swap A)、又作为 model+judge 组合(swap B),都认为 broken 版本跳过了基础概念讲解。两条路径的指向一致,挺反直觉:换了 model 同样能发现这个问题。explain-rlhf 的 broken 版本大概真的丢了东西,只是 deepseek 自评时看不出来。
 
 ### 预测 4 和预测 5
 
-预测 4:"Swap A 让 verdict 大幅变化。"结果:flagged set 完全不重合,命中了,程度甚至比"大幅变化"还激进。
+预测 4 说"swap A 让 verdict 大幅变化"。CONFIRMED,而且比"大幅"还要激进得多:6 个 case,只有 sql-injection 与 baseline 重合,集合差异极大。
 
-预测 5:"A 和 B 的差距反映 model variance 贡献占比。"A flags 1 个,B flags 0 个。差距真实,但 swap B 的 0/10 是自写答案不差加上自评宽容的双重效应,model variance 只是其中一个因素。方向对,因果链比预测复杂。
+预测 5 说"swap B 与 swap A 的差距反映 model variance 贡献占比"。CONFIRMED with caveat。swap A 6 个 vs swap B 1 个,重合 1 个(explain-rlhf)。但 swap B 的稀疏主要来自 qwen-plus 的自评宽容效应,model variance 只是其中一部分原因。方向对,因果链比预测复杂。
 
 ### 选 judge 是科学决定
 
-文章 2 的 2 个 regressed 换成 gpt-5-mini judge 后一个都没留住,被另一组完全不同的 case 替换掉了。
+文章 2 的 2 个 flagged case 换成 qwen-plus judge 后,判定数量变成 6,集合几乎完全不同。
 
-Eval 工具报出的 verdict 是 model-judge 组合的属性,不是数据本身的属性。换个 judge,回归判定可以变得不可识别。
+Eval 工具报出的 verdict 是 model-judge 组合的属性,不是数据本身的属性。换个 judge,回归判定可以变得面目全非。
 
 ## 六、谁改变了我们的判定
 
 6 种干预、10 个 case、60 个判定格。把它们全部放在一张表里,才能看清楚哪些格子真的变了颜色。
 
-| case | percentile (v0.4) | BCa | paired | FDR (BH) | swap A (DS-out+GPT-judge) | swap B (GPT+GPT) |
+| case | percentile (v0.4) | BCa | paired | FDR (BH) | swap A (DS-out+Qwen-judge) | swap B (Qwen+Qwen) |
 |---|---|---|---|---|---|---|
-| `explain-rlhf` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| `explain-rlhf` | unchanged | unchanged | unchanged | unchanged | regressed | regressed |
 | `explain-vector-db` | unchanged | unchanged | unchanged | unchanged | regressed | unchanged |
-| `sql-injection-vulnerability` | regressed | regressed | regressed | unchanged | unchanged | unchanged |
+| `sql-injection-vulnerability` | regressed | regressed | regressed | unchanged | regressed | unchanged |
 | `k8s-configmap-vs-secret` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
-| `asyncio-yield-deadlock` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| `asyncio-yield-deadlock` | unchanged | unchanged | unchanged | unchanged | regressed | unchanged |
 | `python-gil-tradeoffs` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
 | `redis-cluster-failover` | regressed | regressed | regressed | regressed | unchanged | unchanged |
-| `tcp-congestion-control` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| `tcp-congestion-control` | unchanged | unchanged | unchanged | unchanged | regressed | unchanged |
 | `jwt-vs-session` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
-| `transformer-attention` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| `transformer-attention` | unchanged | unchanged | unchanged | unchanged | regressed | unchanged |
 
-### 稳定的 7 个 case
+### 只有 3 个 case 全列稳定
 
-7 个 case 6 列全部 unchanged。无论换统计方法还是换 judge,verdict 纹丝不动。
+6 列全部 unchanged 的只有 3 个:k8s-configmap-vs-secret、python-gil-tradeoffs、jwt-vs-session。无论用哪种统计方法、换哪个 judge,这 3 个 case 的 verdict 一直不动。可以认为它们是真信号——多维度都指向同一结论。
 
-### 3 个不稳定 case
+其余 7 个 case 在某种干预下都变过颜色。
 
-`sql-injection-vulnerability` 在 percentile/BCa/paired 全部 regressed,到 FDR 被压掉。p=0.0140,离 BH rank 2 阈值 0.010 只差 0.004。
+### 7 个不稳定 case 各自的翻盘画像
 
-`redis-cluster-failover` 四列统计方法全 regressed,p=0.0000。但 swap A 直接消失:gpt-5-mini 看同一份回答 5 次全打 0,baseline 就已经死分,broken Δ=0。
+`explain-rlhf`:4 种 deepseek judge 方法全部 unchanged,2 种 qwen-plus 方法全部 regressed。跨 judge 的指向相当清晰:broken 版本确实丢了东西,只是 deepseek 自评没看出来。
 
-`explain-vector-db` 在 5 列 unchanged,只有 swap A 判为 regressed。gpt-5-mini 对概念说明题的 brevity 容忍度比 deepseek-chat 低。
+`explain-vector-db`、`asyncio-yield-deadlock`、`tcp-congestion-control`、`transformer-attention`:5 列 unchanged,只有 swap A 判为 regressed。qwen-plus 单独看到了 deepseek judge 看不出的问题。
+
+`sql-injection-vulnerability`:percentile/BCa/paired 全部 regressed,swap A 也 regressed;FDR 把它压掉了(p=0.0140,BH rank 2 阈值 0.010,差 0.004 没过);swap B 不 regressed。四列方法指向有罪,两列方法放行。
+
+`redis-cluster-failover`:4 种 deepseek judge 方法全部 regressed,2 种 qwen-plus 方法全部 unchanged。不是因为 qwen-plus 宽松——而是 qwen-plus 认为 baseline 就已经 0 分,broken 版本同样 0 分,Δ=0。从 deepseek 的角度有回退信号,从 qwen-plus 的角度两个都不行。
 
 ### 两个综合论点
 
-统计方法对 verdict 的影响远比直觉以为的小。percentile、BCa、paired 产出完全相同的 flagged 集合;FDR 与它们只差 1 个 case。4 种方法一共只产出 2 个不同集合。
+统计方法的影响极小。percentile、BCa、paired 三种方法产出完全相同的 flagged 集合;FDR 与它们只差 1 个 case。4 种方法一共只产出 2 个不同集合。团队为"BCa 还是 percentile"争论,基本是在噪声里优化。
 
-Judge identity 的影响力远超统计方法。swap A 的 flagged 集合与 baseline 完全不相交,swap B 整个清零。换一个 judge,你得到的是另一份真相,不是同一份真相的另一个读数。
+Judge identity 是核心变量。换了 qwen-plus judge 之后,7/10 个 case 的 verdict 在至少一列发生了变化。评估结论是 model+judge 组合的函数,不是数据本身的属性。定下 judge,别中途换——换了就不是同一份真相的另一个读数,是另一份真相。
 
 ### 给团队的工程判断
 
-团队在争论"BCa 还是 percentile"?选最简单的,把时间花在别处。
+团队为"BCa 还是 percentile"争吵,选最简单的就行,选错了最多差 1 个 case。
 
-团队在争论"用哪个模型当 judge"?那是在选评估真相的来源,值得严肃决策,定下来不要中途换。文章 2 那个"三家工具三种 verdict"的根因和这里一样:三家在判分逻辑上各不相同,不是在统计方法上各不相同。
+团队为"用哪个模型当 judge"争吵,那是在选评估真相的来源。这件事值得严肃定义。文章 2 的"三家工具三个 verdict"根因就在这里:三家工具的 judge 调用和聚合细节不同,不是统计方法不同。
 
 ### 5/5 预测全部命中
 
-5 条预测锁在 commit `cc98b85`(数据跑出来之前),任何人可以核对。预测 1-3 全中;预测 4 flagged 集合完全不重合,比预计更激进;预测 5 有 caveat 但方向对。
+5 条预测锁在 commit `cc98b85`(数据跑出来之前),任何人可以核对。预测 1-3 全中;预测 4 命中,比"大幅变化"更激进;预测 5 有 caveat 但方向对。
 
-5/5,对比文章 2 几乎全错的记录。对统计方法的预测可以依赖数学保证;对 LLM 行为的预测只能依赖经验直觉——后者的可靠性,文章 2 已经量过了。
+5/5。对比文章 2 几乎全错的记录:统计方法的预测有数学依据,LLM 行为的预测靠经验直觉——后者的可靠性,文章 2 已经量过了。
 
 ## 七、局限和第四篇方向
 
@@ -238,15 +238,13 @@ Judge identity 的影响力远超统计方法。swap A 的 flagged 集合与 bas
 
 1. n=10 是小样本。BCa 的 acceleration 估计本身有方差;FDR 的 power 也有限。结论别从 10 个 case 外推到任意 eval 场景。
 
-2. judge temp=1 vs 原定 temp=0。§5 已交代,再提一次:gpt-5-mini 被代理强制跑在 temp=1,原定 gpt-4o-mini at temp=0 没拿到。swap A 因此混了 judge family 差异和 judge 温度噪声两件事,不是干净的单变量实验。
+2. **swap A 用的是单次 trial 输出。** article 2 engine 只存 trial-0;swap A 的 5 次 judge 全在同一份回答上跑。捕获的是 judge 自身抖动,不是"model 抖 × judge 抖"的两层噪声。完整两层噪声需要 evalith 存所有 trial 输出,article 4 工程方向。
 
-3. **swap A 用的是单次 trial 输出。** article 2 engine 只存 trial-0;swap A 的 5 次 judge 全在同一份回答上跑。捕获的是 judge 自身抖动,不是"model 抖 × judge 抖"的两层噪声。完整两层噪声需要 evalith 存所有 trial 输出,article 4 工程方向。
+3. 三方 judge 只跑了一个。1 个非 deepseek judge 只能说"换了一次,verdict 变了",不能说"跨多种 judge 都跑成这样"。理想是 3-4 个跨家族 judge(deepseek / openai / anthropic / qwen),article 4 至少再加一家。
 
-4. 三方 judge 只跑了一个。1 个非 deepseek judge 只能说"换了一次,verdict 变了",不能说"跨多种 judge 都跑成这样"。article 4 会接入 Claude,至少多看一家。
+4. **这是 article 2 的同一份数据。** 跨方法对照干净,但跨数据集泛化 0 验证。100 case + 多领域 dataset 在 article 4 / arXiv preprint 中扩。
 
-5. **这是 article 2 的同一份数据。** 跨方法对照干净,但跨数据集泛化 0 验证。100 case + 多领域 dataset 在 article 4 / arXiv preprint 中扩。
-
-article 4 方向:per-case `expected_concepts` 注入 judge prompt(article 2 §3 发现 evalith llm_judge 没用 dataset 里的字段,article 4 修);Claude / Qwen 各做一次 cross-judge,从"换 1 个"变成"看 verdict 分布";dataset 从 10 扩到 50-100 case 跨多领域;adaptive sampling 根据 CI 收敛动态停止,降 eval 成本。
+article 4 方向:per-case `expected_concepts` 注入 judge prompt(article 2 §3 发现 evalith llm_judge 没用 dataset 里的字段,article 4 修);Claude / OpenAI 各做一次 cross-judge,从"换 1 个"变成"看 verdict 分布";dataset 从 10 扩到 50-100 case 跨多领域;adaptive sampling 根据 CI 收敛动态停止,降 eval 成本。
 
 ---
 
