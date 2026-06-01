@@ -6,7 +6,13 @@
 
 ## 一、那个承诺 + 一个问题
 
-<TODO §1 — Task 16: 回顾 article 2 verdict、引出核心问句、把 5 条 pre-committed 预测的存在直接讲清楚>
+上篇数字:Evalith bootstrap 抓到 **2/10** regressed,promptfoo 1/10,DeepEval 5/10,三家唯一一致命中的只有 sql-injection-vulnerability。其余 case 三家各说各的。这就产生一个必须回答的问题:Evalith 漏掉的,到底是别家误报,还是真的有问题而 Evalith 没抓到?
+
+上篇文末承诺了 4 件事——BCa 修偏、paired bootstrap 利用 case 内相关性收窄区间、FDR 控制 10 个 case 同时检验时的假阳率膨胀、第三方 judge 验证跨家族判定是否一致。今天把这四件事挂上去,在同一份 frozen raw 数据上重看一遍。
+
+实验环境有一个偏离需要事先说清楚:可用的 OpenAI 代理只放行 gpt-5-mini,且强制 temperature=1。上篇 deepseek judge 跑在 temp=0;这次 judge 本身带了采样噪声。对结论的影响,§5 展开,§7 再提。
+
+5 条预测就摆在下面。文章 2 的假设几乎全错,这次数据说了算。
 
 ### 在看到结果之前,我先把 5 条预测写在这里
 
