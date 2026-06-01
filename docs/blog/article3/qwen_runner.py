@@ -1,20 +1,24 @@
-"""Cross-judge swap B: gpt-5-mini does BOTH model output and judge scoring.
+"""Cross-judge swap B: qwen-plus does BOTH model output and judge scoring.
 
 Loads docs/blog/article2/qa.high-temp.yaml as dataset, runs each case 5 times
-through gpt-5-mini at temp=1 (forced by gpt-5 family), then has gpt-5-mini judge
-each output against article 2's same criteria string at temp=1 (also forced).
+through qwen-plus as the answering model (temp=1, matching article 2's setting),
+then has qwen-plus judge each output against article 2's same criteria string
+at temp=0 (matching evalith's llm_judge default).
 
 Writes a Run-shaped JSON consumable by `Run.model_validate_json(...)` so the
 downstream compare.py + diff_runs can read it like an Evalith run.
 
-Deviation from plan documented in article §5/§7: judge temp=1 instead of temp=0;
-also a different model family (gpt-5-mini) than article 2's gpt-4o-mini target.
+Cross-judge design:
+- Both model and judge swapped to qwen-plus (a fresh end-to-end re-run)
+- Model temp=1, judge temp=0 — both exactly match article 2's deepseek-chat run
+- Compared against swap A (rejudge.py output) we can attribute verdict
+  differences between A and B to model variance alone.
 
 Usage:
-  OPENAI_API_KEY=sk-... OPENAI_BASE_URL=https://api.sublyx.org/v1 \\
-    python3 docs/blog/article3/openai_runner.py <variant> <out.json>
+  DASHSCOPE_API_KEY=sk-... \\
+    python3 docs/blog/article3/qwen_runner.py <variant> <out.json>
 
-  variant = "baseline" (passthrough prompt) | "broken" (prompt with bias injection)
+  variant = "baseline" | "broken"
 """
 import json, os, sys, uuid
 from datetime import datetime, timezone
@@ -30,10 +34,10 @@ OUT_PATH = sys.argv[2]
 if VARIANT not in {"baseline", "broken"}:
     print(f"variant must be 'baseline' or 'broken', got {VARIANT!r}", file=sys.stderr); sys.exit(1)
 
-API_KEY = os.environ.get("OPENAI_API_KEY")
-BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.sublyx.org/v1")
+API_KEY = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("OPENAI_API_KEY")
+BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 if not API_KEY:
-    print("ERROR: OPENAI_API_KEY not set", file=sys.stderr); sys.exit(1)
+    print("ERROR: set DASHSCOPE_API_KEY (or OPENAI_API_KEY fallback)", file=sys.stderr); sys.exit(1)
 
 DATASET = yaml.safe_load(Path("docs/blog/article2/qa.high-temp.yaml").read_text())
 EVAL_CFG = yaml.safe_load(Path("docs/blog/article2/configs/eval.high-temp.yaml").read_text())
@@ -43,8 +47,7 @@ BASELINE_PREFIX = ""
 BROKEN_PREFIX = "Be very concise. Answer in 1-2 short sentences. Skip explanations and concept enumeration: "
 PROMPT_PREFIX = BASELINE_PREFIX if VARIANT == "baseline" else BROKEN_PREFIX
 
-MODEL = "openai/gpt-5-mini"
-TEMP = 1.0
+MODEL = "openai/qwen-plus"
 
 JUDGE_PROMPT = """你是一名严格的 AI 答案评审。
 
@@ -63,7 +66,7 @@ AI 的回答:
 def model_call(prompt: str) -> str:
     r = litellm.completion(
         model=MODEL, messages=[{"role": "user", "content": prompt}],
-        temperature=TEMP, api_base=BASE_URL,
+        temperature=1.0, api_key=API_KEY, api_base=BASE_URL,
     )
     return r.choices[0].message.content
 
@@ -71,7 +74,7 @@ def judge(input_text: str, output_text: str) -> tuple[float, bool, str]:
     prompt = JUDGE_PROMPT.format(input=input_text, output=output_text, criteria=CRITERIA)
     r = litellm.completion(
         model=MODEL, messages=[{"role": "user", "content": prompt}],
-        temperature=TEMP, api_base=BASE_URL,
+        temperature=0.0, api_key=API_KEY, api_base=BASE_URL,
     )
     text = r.choices[0].message.content
     start = text.find("{")
@@ -105,7 +108,6 @@ for case in DATASET["cases"]:
         pass_samples.append(1.0 if passed else 0.0)
         if trial == 0:
             first_score, first_passed, first_reason = score, passed, reason
-    # CaseResult shape — Evalith engine takes trial[0] as representative
     results.append({
         "case_id": cid,
         "input": input_text,
@@ -124,7 +126,7 @@ for case in DATASET["cases"]:
 
 run = {
     "id": uuid.uuid4().hex[:12],
-    "name": f"openai-swap-b-{VARIANT}",
+    "name": f"qwen-swap-b-{VARIANT}",
     "created_at": datetime.now(timezone.utc).isoformat(),
     "model": MODEL,
     "results": results,

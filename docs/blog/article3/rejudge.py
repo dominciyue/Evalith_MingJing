@@ -1,25 +1,19 @@
-"""Cross-judge swap A: hold model outputs constant, only re-judge with gpt-5-mini.
+"""Cross-judge swap A: hold model outputs constant, only re-judge with qwen-plus.
 
 Reads article 2 frozen raw (a1.json or b.json), extracts each case's model output
-(trial 0 — same data Evalith stored), re-judges using gpt-5-mini via the sublyx
-proxy with the SAME criteria string article 2 used, and writes a new pass_rate
-shaped JSON ready for downstream comparison.
+(trial 0 — same data Evalith stored), re-judges using qwen-plus via DashScope's
+OpenAI-compatible endpoint with the SAME criteria string article 2 used, and
+writes a new pass_rate shaped JSON ready for downstream comparison.
 
-Deviation from original plan (documented in article §5/§7):
-- Model: gpt-5-mini (originally gpt-4o-mini; sublyx proxy via ChatGPT-Codex
-  account doesn't expose gpt-4o-mini)
-- Judge temperature: 1.0 (forced; gpt-5 family rejects temp=0)
-  This adds judge noise that wasn't in article 2's baseline (deepseek-chat
-  judge at temp=0); §5 prose accounts for this conflation.
+Cross-judge design:
+- Judge family swap (deepseek-chat → qwen-plus); a different LLM vendor
+- Judge temperature: 0.0 (matches article 2's evalith llm_judge default exactly)
+- Only one variable changes (judge family), so verdict differences vs article 2
+  are attributable to judge identity alone — clean cross-judge isolation.
 
 Usage:
-  OPENAI_API_KEY=sk-... OPENAI_BASE_URL=https://api.sublyx.org/v1 \\
-    python3 docs/blog/article3/rejudge.py <input.json> <output.json>
-
-Note: article 2 stored only trial-0 output (engine.py:48-58 takes rep=trials[0]).
-So this rejudge gets 5 judge samples on the SAME single output — capturing judge
-noise (the LLM judge's own jitter) but not model output noise. For full multi-trial
-judging we'd need stored multi-trial outputs, which is article 4 territory."""
+  DASHSCOPE_API_KEY=sk-... python3 docs/blog/article3/rejudge.py <input.json> <output.json>
+"""
 import json, os, sys
 from pathlib import Path
 import litellm
@@ -28,10 +22,10 @@ import yaml
 if len(sys.argv) != 3:
     print(f"usage: {sys.argv[0]} <input.json> <output.json>", file=sys.stderr); sys.exit(1)
 
-API_KEY = os.environ.get("OPENAI_API_KEY")
-BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.sublyx.org/v1")
+API_KEY = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("OPENAI_API_KEY")
+BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 if not API_KEY:
-    print("ERROR: OPENAI_API_KEY not set", file=sys.stderr); sys.exit(1)
+    print("ERROR: set DASHSCOPE_API_KEY (or OPENAI_API_KEY fallback)", file=sys.stderr); sys.exit(1)
 
 src = json.loads(Path(sys.argv[1]).read_text())
 EVAL_CFG = yaml.safe_load(Path("docs/blog/article2/configs/eval.high-temp.yaml").read_text())
@@ -54,9 +48,10 @@ AI 的回答:
 def judge(input_text: str, output_text: str) -> tuple[float, bool]:
     prompt = JUDGE_PROMPT.format(input=input_text, output=output_text, criteria=CRITERIA)
     r = litellm.completion(
-        model="openai/gpt-5-mini",
+        model="openai/qwen-plus",
         messages=[{"role": "user", "content": prompt}],
-        temperature=1.0,  # forced by gpt-5 family
+        temperature=0.0,
+        api_key=API_KEY,
         api_base=BASE_URL,
     )
     text = r.choices[0].message.content
@@ -79,7 +74,7 @@ for case in src["results"]:
             samples.append(1.0 if passed else 0.0)
         except Exception as e:
             print(f"  WARN {cid} trial {trial}: {type(e).__name__}: {str(e)[:120]}", file=sys.stderr)
-            samples.append(0.0)  # conservative: failed judge call → fail
+            samples.append(0.0)
     out.append({
         "case_id": cid,
         "pass_rate_samples": samples,

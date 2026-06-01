@@ -3,7 +3,7 @@
 Reads:
   - docs/blog/article2/raw/{a1,b}.json (Evalith Run-format, deepseek+deepseek)
   - docs/blog/article3/raw/rejudge_{a1,b}.json (custom list shape, swap A)
-  - docs/blog/article3/raw/openai_{a1,b}.json (Run-format, swap B)
+  - docs/blog/article3/raw/qwen_{a1,b}.json (Run-format, swap B)
 
 Emits to stdout:
   - §5 cross-judge table (3 columns: baseline / swap A / swap B verdicts)
@@ -38,14 +38,14 @@ def rejudge_as_run(path: Path, name: str) -> Run:
             case_id=c["case_id"],
             input=c.get("input", ""),
             output=c.get("output_used", ""),
-            scores=[Score(scorer="gpt-5-mini-judge", value=first_rate, passed=first_rate >= 0.5, detail="")],
+            scores=[Score(scorer="qwen-plus-judge", value=first_rate, passed=first_rate >= 0.5, detail="")],
             latency_ms=0.0,
             prompt_tokens=0, completion_tokens=0, total_tokens=0, cost_usd=0.0,
             pass_rate_samples=c["pass_rate_samples"],
         ))
     return Run(id=f"rejudge-{name}", name=f"rejudge-{name}",
                created_at=datetime.now(timezone.utc),
-               model="gpt-5-mini-rejudge", results=results, config={})
+               model="qwen-plus-rejudge", results=results, config={})
 
 # Load all sources
 a1_dsk = load_run(ART2 / "a1.json")
@@ -54,8 +54,8 @@ b_dsk  = load_run(ART2 / "b.json")
 a1_rej = rejudge_as_run(ART3 / "rejudge_a1.json", "a1")
 b_rej  = rejudge_as_run(ART3 / "rejudge_b.json",  "b")
 
-a1_oai = load_run(ART3 / "openai_a1.json")
-b_oai  = load_run(ART3 / "openai_b.json")
+a1_qwn = load_run(ART3 / "qwen_a1.json")
+b_qwn  = load_run(ART3 / "qwen_b.json")
 
 def status_map(report) -> dict[str, str]:
     return {c.case_id: c.status for c in report.cases}
@@ -65,13 +65,13 @@ verdicts = {
     "BCa":                 status_map(diff_runs(a1_dsk, b_dsk, ci_method="bca")),
     "paired":              status_map(diff_runs(a1_dsk, b_dsk, ci_method="paired")),
     "FDR (BH)":            status_map(diff_runs(a1_dsk, b_dsk, multi_test_correction="bh")),
-    "swap A (DS-out+GPT-judge)": status_map(diff_runs(a1_rej, b_rej)),
-    "swap B (GPT+GPT)":          status_map(diff_runs(a1_oai, b_oai)),
+    "swap A (DS-out+Qwen-judge)": status_map(diff_runs(a1_rej, b_rej)),
+    "swap B (Qwen+Qwen)":         status_map(diff_runs(a1_qwn, b_qwn)),
 }
 
 # ===== §5 cross-judge table =====
 print("\n## §5 — cross-judge double-track\n")
-print("| case | DS+DS (v0.4 baseline) | swap A: DS-out + GPT judge | swap B: GPT+GPT |")
+print("| case | DS+DS (v0.4 baseline) | swap A: DS-out + Qwen judge | swap B: Qwen+Qwen |")
 print("|---|---|---|---|")
 for cid in CANONICAL:
     v0 = verdicts["percentile (v0.4)"][cid]
@@ -101,8 +101,8 @@ percentile = {c for c,s in verdicts["percentile (v0.4)"].items() if s == "regres
 bca        = {c for c,s in verdicts["BCa"].items() if s == "regressed"}
 paired     = {c for c,s in verdicts["paired"].items() if s == "regressed"}
 fdr        = {c for c,s in verdicts["FDR (BH)"].items() if s == "regressed"}
-swap_a     = {c for c,s in verdicts["swap A (DS-out+GPT-judge)"].items() if s == "regressed"}
-swap_b     = {c for c,s in verdicts["swap B (GPT+GPT)"].items() if s == "regressed"}
+swap_a     = {c for c,s in verdicts["swap A (DS-out+Qwen-judge)"].items() if s == "regressed"}
+swap_b     = {c for c,s in verdicts["swap B (Qwen+Qwen)"].items() if s == "regressed"}
 
 print(f"1. BCa not significantly different from percentile?  {bca == percentile}  (BCa={sorted(bca)}, percentile={sorted(percentile)})")
 print(f"2. Paired doesn't add any new regressed (subset of percentile)? {paired.issubset(percentile)}  (paired={sorted(paired)})")
@@ -110,13 +110,13 @@ print(f"3. FDR removes sql-injection but keeps redis?  {('sql-injection-vulnerab
 print(f"4. Swap A verdict differs notably from percentile?  {swap_a != percentile}  (swap_a={sorted(swap_a)})")
 print(f"5. Swap B differs from swap A (model variance contributes)?  {swap_b != swap_a}  (swap_b={sorted(swap_b)})")
 
-# ===== meta: gpt-5-mini baseline divergence vs deepseek =====
+# ===== meta: qwen-plus baseline divergence vs deepseek =====
 print("\n## meta: judge mean disagreement on a1 baseline\n")
-print("(gpt-5-mini judging deepseek's a1 outputs vs deepseek-chat's own a1 judgments)\n")
+print("(qwen-plus judging deepseek's a1 outputs vs deepseek-chat's own a1 judgments)\n")
 from statistics import mean
 a1_dsk_means = {c.case_id: (mean(c.pass_rate_samples) if c.pass_rate_samples else 0.0) for c in a1_dsk.results}
 a1_rej_means = {c.case_id: (mean(c.pass_rate_samples) if c.pass_rate_samples else 0.0) for c in a1_rej.results}
-print("| case | deepseek-chat judge | gpt-5-mini judge | gap |")
+print("| case | deepseek-chat judge | qwen-plus judge | gap |")
 print("|---|---|---|---|")
 for cid in CANONICAL:
     dsk = a1_dsk_means.get(cid, 0.0)
