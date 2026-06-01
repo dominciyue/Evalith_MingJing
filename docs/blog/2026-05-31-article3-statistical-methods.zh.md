@@ -191,7 +191,50 @@ swap B 让 gpt-5-mini 生成回答再自评。a1 baseline 侧 10/10 全部 1.00�
 
 ## 六、谁改变了我们的判定
 
-<TODO §6 — Task 21>
+6 种干预、10 个 case、60 个判定格。把它们全部放在一张表里,才能看清楚哪些格子真的变了颜色。
+
+| case | percentile (v0.4) | BCa | paired | FDR (BH) | swap A (DS-out+GPT-judge) | swap B (GPT+GPT) |
+|---|---|---|---|---|---|---|
+| `explain-rlhf` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| `explain-vector-db` | unchanged | unchanged | unchanged | unchanged | regressed | unchanged |
+| `sql-injection-vulnerability` | regressed | regressed | regressed | unchanged | unchanged | unchanged |
+| `k8s-configmap-vs-secret` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| `asyncio-yield-deadlock` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| `python-gil-tradeoffs` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| `redis-cluster-failover` | regressed | regressed | regressed | regressed | unchanged | unchanged |
+| `tcp-congestion-control` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| `jwt-vs-session` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+| `transformer-attention` | unchanged | unchanged | unchanged | unchanged | unchanged | unchanged |
+
+### 稳定的 7 个 case
+
+上表中,7 个 case(explain-rlhf、asyncio-yield-deadlock 等)6 列全部 unchanged。无论换统计方法还是换 judge,verdict 纹丝不动。文章 2 对这 7 个 case 的 unchanged 判定,在本文所有干预下都经得住。
+
+### 3 个不稳定 case
+
+**sql-injection-vulnerability** 在 percentile/BCa/paired 全部 regressed,到 FDR 被压掉,swap A/B 无信号。p=0.0140,离 BH rank 2 阈值 0.010 只差 0.004。信号本身不强,稍严一点的约束就够了。
+
+**redis-cluster-failover** 是全表信号最强的 case。四列统计方法全 regressed,p=0.0000。但 swap A 直接消失:gpt-5-mini 看同一份回答 5 次全打 0,baseline 就已经死分,broken Δ=0,没有信号可检测。
+
+**explain-vector-db** 在 5 列 unchanged,只有 swap A 判为 regressed。gpt-5-mini 对概念说明题的 brevity 容忍度比 deepseek-chat 低。deepseek judge 不觉得有问题,gpt-5-mini 明确判退。
+
+### 两个综合论点
+
+**统计方法对 verdict 的影响远比直觉以为的小。** percentile、BCa、paired 产出完全相同的 flagged 集合;FDR 与它们的差距只有 1 个 case。4 种方法一共只产出 2 个不同集合。"换成 BCa,verdict 就变了"这个故事在我们的数据上没有发生过。
+
+judge identity 的影响力远超统计方法。swap A 的 flagged 集合与 baseline 完全不相交,swap B 整个清零。eval CI 报出的 verdict 是"model + judge"组合的属性,不是数据本身的属性。换一个 judge,你得到的是另一份真相,不是同一份真相的另一个读数。
+
+### 给团队的工程判断
+
+团队在争论"BCa 还是 percentile"?那是在噪声里优化。选最简单的,把时间花在别处。
+
+团队在争论"用哪个模型当 judge"?那是在选评估真相的来源——这件事值得严肃决策,定下来就不要中途换。文章 2 那个"三家工具三种 verdict"的发现,根因和这里一样:promptfoo / DeepEval / Evalith 在判分逻辑上各不相同,不是在统计方法上各不相同。
+
+### 5/5 预测全部命中
+
+5 条预测锁在 commit `cc98b85`(数据跑出来之前),任何人可以核对。预测 1–3 全中;预测 4 flagged 集合完全不重合,比预计更激进;预测 5 有 caveat 但方向对。
+
+5/5,对比文章 2 几乎全错的记录。这个对比本身是一个发现:对统计方法的预测可以依赖数学保证;对 LLM 行为的预测只能依赖经验直觉——后者的可靠性,文章 2 已经量过了。
 
 ## 七、局限和第四篇方向
 
