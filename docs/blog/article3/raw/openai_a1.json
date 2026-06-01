@@ -1,0 +1,259 @@
+{
+  "id": "173232de6154",
+  "name": "openai-swap-b-baseline",
+  "created_at": "2026-06-01T06:15:14.530822+00:00",
+  "model": "openai/gpt-5-mini",
+  "results": [
+    {
+      "case_id": "explain-rlhf",
+      "input": "用 4-6 句话解释 RLHF(从人类反馈中强化学习)是什么、为什么需要它,以及典型流程的主要环节。",
+      "output": "RLHF（Reinforcement Learning from Human Feedback，从人类反馈中强化学习）是一种让模型不仅“会预测下一个词”，还更符合人类偏好、目标和安全要求的训练方法。之所以需要它，是因为单靠传统预训练，模型虽然学到大量语言规律，但不一定知道什么回答更有帮助、更可靠或更符合规范。典型流程通常先进行监督微调（SFT），用人工编写或筛选的高质量示例让模型学会基本的指令跟随能力。接着收集人类对多个模型回答的偏好比较数据，训练一个奖励模型（Reward Model）去预测人类更喜欢哪种输出。最后用强化学习方法（如 PPO）让语言模型朝着更高奖励的方向优化，同时尽量保持语言质量和稳定性。整体上，RLHF 的目标是把“人类觉得好的回答”系统化地转化为模型可学习的信号。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.98,
+          "passed": true,
+          "detail": "回答清楚解释了RLHF的定义、为何需要它，以及典型流程中的SFT、偏好数据收集、奖励模型和PPO优化，覆盖完整且表述准确。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "explain-vector-db",
+      "input": "用 4-6 句话说明向量数据库与传统关系型数据库的核心区别,以及在 LLM 应用栈里的典型作用。",
+      "output": "向量数据库和传统关系型数据库的核心区别在于：关系型数据库按结构化字段做精确匹配、过滤和事务处理，而向量数据库主要存储高维向量表示，并通过相似度检索找到“语义上接近”的内容。  \n关系型数据库适合订单、用户、库存这类强一致、可 JOIN、可聚合的业务数据；向量数据库更适合文本、图片、代码等非结构化数据的语义搜索与召回。  \n在 LLM 应用栈中，向量数据库的典型作用是承载 embedding 索引，为 RAG 提供知识检索，让模型在生成前先找回相关片段。  \n这样可以减少模型幻觉、引入私有知识，并让回答更贴近企业文档、知识库或历史对话。  \n实际系统里两者通常不是替代关系，而是配合使用：关系型数据库管业务事实，向量数据库管语义检索。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.98,
+          "passed": true,
+          "detail": "回答在 5 句话内清晰说明了核心区别：关系型数据库侧重结构化数据、精确查询与事务，向量数据库侧重高维向量存储与相似度/语义检索；同时准确说明了其在 LLM 应用栈中的典型作用，即通过 embedding 索引支撑 RAG 检索，减少幻觉并结合私有知识。内容完整、概念覆盖充分且表述准确。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "sql-injection-vulnerability",
+      "input": "下列伪代码 `db.query(\"SELECT * FROM users WHERE name = '\" + name + \"'\")` 在什么情况下不安全?该如何修?用 4-6 句话回答。",
+      "output": "当 `name` 来自用户输入且未经过严格处理时，这段拼接 SQL 的写法会产生 **SQL 注入** 风险。  \n例如攻击者输入 `\"' OR '1'='1\"`，就可能改变原查询逻辑，读取、绕过甚至破坏数据库中的数据。  \n安全修复方式是使用 **参数化查询 / 预编译语句**，把用户输入作为参数传入，而不是直接拼接到 SQL 字符串中。  \n例如可改为类似 `db.query(\"SELECT * FROM users WHERE name = ?\", [name])` 的形式。  \n如果业务允许，还应结合输入校验、最小权限数据库账号等措施进一步降低风险。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.97,
+          "passed": true,
+          "detail": "回答准确指出了用户输入拼接导致的 SQL 注入风险，给出了攻击示例，说明了参数化查询这一核心修复方式，并补充了输入校验和最小权限等防护措施；内容清晰、完整，且满足 4-6 句话要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "k8s-configmap-vs-secret",
+      "input": "Kubernetes 的 ConfigMap 和 Secret 区别是什么,选择哪一个的依据是什么?用 4-6 句话说明。",
+      "output": "ConfigMap 和 Secret 都用于把配置以键值对的方式注入到 Pod 中，但 **ConfigMap 用于普通配置**，而 **Secret 用于敏感数据**，例如密码、Token、证书等。  \n两者在使用方式上很相似，都可以通过环境变量或挂载文件的形式提供给容器。  \n主要区别是 Secret 在语义上就是“机密信息”，通常会配合更严格的 RBAC、审计以及加密存储（如 etcd 加密）来保护，而 ConfigMap 不适合存放敏感内容。  \n选择依据很简单：**如果数据泄露会带来安全风险，就用 Secret；如果只是普通业务配置、参数、开关、URL 等，就用 ConfigMap。**  \n另外要注意，Secret 默认只是 Base64 编码，并不等于天然加密，因此生产环境通常还需要启用额外的安全保护措施。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.97,
+          "passed": true,
+          "detail": "回答清晰说明了 ConfigMap 与 Secret 的用途差异、共同注入方式、选择依据，以及 Secret 的安全特性与局限，覆盖核心概念充分且符合 4-6 句话要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "asyncio-yield-deadlock",
+      "input": "在 Python asyncio 协程中调用 `time.sleep(1)` 会发生什么?为什么不能这样写?用 4-6 句话说明。",
+      "output": "在 `asyncio` 协程里调用 `time.sleep(1)`，会直接阻塞当前线程 1 秒。  \n由于 `asyncio` 的事件循环通常就在这个线程中运行，所以这 1 秒内其他协程、定时任务和 IO 事件都无法被调度。  \n这样会破坏协程“非阻塞并发”的意义，导致整个程序看起来卡住。  \n因此在协程中不能用 `time.sleep()` 做等待，而应使用 `await asyncio.sleep(1)`。  \n`asyncio.sleep()` 会把控制权交还给事件循环，让其他任务在等待期间继续运行。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.98,
+          "passed": true,
+          "detail": "回答准确说明了 time.sleep 会阻塞当前线程、连带阻塞事件循环，导致其他协程和 IO 无法调度，并清楚给出应改用 await asyncio.sleep 的原因与效果；内容完整、清晰，且满足 4-6 句话要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "python-gil-tradeoffs",
+      "input": "用 4-6 句话说明 Python 的 GIL 是什么、它对 CPU 密集型多线程任务的影响,以及常见绕开方式。",
+      "output": "Python 的 GIL（Global Interpreter Lock，全局解释器锁）是 CPython 解释器中的一种机制，它规定同一时刻只能有一个线程执行 Python 字节码。  \n这让多线程在处理 I/O 密集型任务时通常仍然有效，因为线程在等待网络或磁盘时会释放执行机会。  \n但对于 CPU 密集型任务，多线程往往不能真正并行利用多核，甚至还可能因为线程切换带来额外开销，导致性能提升不明显。  \n常见的绕开方式是使用多进程（如 `multiprocessing`），因为每个进程都有独立的 Python 解释器和 GIL。  \n此外，也可以借助 C 扩展、NumPy 这类在底层释放 GIL 的库，或者使用不受 GIL 限制的实现与方案。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.96,
+          "passed": true,
+          "detail": "回答在 4-6 句话内清楚说明了 GIL 的定义、对 CPU 密集型多线程无法真正并行的影响，并补充了 I/O 密集型场景对比与多进程、释放 GIL 的库等常见绕开方式，覆盖充分且表述准确。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "redis-cluster-failover",
+      "input": "Redis Cluster 中,一个主节点宕机后,从节点是如何被选举为新主、客户端流量是如何被重定向的?用 4-6 句话说明流程。",
+      "output": "Redis Cluster 中，某个主节点宕机后，集群里的其他主节点会先通过心跳和投票机制判断它是否真正失效，并将其标记为 `FAIL`。  \n该主节点的从节点会发现主节点下线后，按照各自复制偏移量、优先级、延迟等条件，经过一个带随机延时的竞选过程向其他主节点发起拉票。  \n获得过半主节点投票的从节点会被提升为新的主节点，并接管原主节点负责的哈希槽。  \n新主节点会通过集群总线向其他节点广播自己的身份变更，使整个集群更新槽位映射关系。  \n客户端如果还访问旧主节点或使用旧的槽位缓存，会收到 `MOVED` 重定向响应，然后刷新本地槽位到节点的映射并把后续流量发送到新主节点。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.98,
+          "passed": true,
+          "detail": "回答完整覆盖了故障判定、从节点竞选与投票、晋升为新主并接管槽位、集群广播更新以及客户端通过 MOVED 重定向刷新路由等核心流程，且表述清晰，符合 4-6 句话要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "tcp-congestion-control",
+      "input": "TCP 拥塞控制中,慢启动和拥塞避免阶段的核心区别是什么?用 4-6 句话说明。",
+      "output": "慢启动和拥塞避免的核心区别在于拥塞窗口 `cwnd` 的增长速度不同。  \n在慢启动阶段，`cwnd` 大致按每经过一个 RTT 翻倍增长，因此是指数增长，目的是快速探测可用带宽。  \n当 `cwnd` 达到慢启动门限 `ssthresh` 后，TCP 通常进入拥塞避免阶段。  \n在拥塞避免阶段，`cwnd` 改为线性增长，通常每个 RTT 大约增加 1 个 MSS，以更谨慎地继续提高发送速率。  \n因此，慢启动强调“快速增大”，而拥塞避免强调“平稳试探”，以降低发生网络拥塞的风险。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.97,
+          "passed": true,
+          "detail": "回答清晰说明了两阶段的核心区别：cwnd 在慢启动中指数增长、在拥塞避免中线性增长；还提到 ssthresh 作为切换条件，以及两者分别用于快速探测带宽和谨慎避免拥塞，覆盖充分且符合 4-6 句话要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "jwt-vs-session",
+      "input": "JWT 与传统服务端 session 在认证上的核心权衡是什么?用 4-6 句话说明。",
+      "output": "JWT 和传统服务端 session 的核心权衡，本质上是在“无状态扩展性”和“集中式控制能力”之间取舍。  \nJWT 把认证状态放在客户端令牌里，服务端通常无需保存会话，因此更容易做分布式扩展、跨服务传递身份，但令牌一旦签发，主动失效、立即踢下线、细粒度会话控制会更麻烦。  \n传统 session 把状态保存在服务端，服务端可以随时撤销、续期、查看和管理会话，安全控制更直接，但需要 session 存储与共享机制，横向扩展成本更高。  \nJWT 常见问题还包括令牌体积更大、泄露后在过期前可被滥用；而 session 更依赖服务端存储可用性和跨节点一致性。  \n因此，如果更看重微服务间无状态认证与扩展性，JWT 更合适；如果更看重会话可控性与即时失效能力，传统 session 往往更稳妥。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.97,
+          "passed": true,
+          "detail": "回答完整覆盖了核心权衡：JWT 的无状态与扩展性、session 的服务端集中控制、失效与撤销能力、分布式扩展成本，以及安全与存储一致性等问题，解释清晰且符合 4-6 句话要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "transformer-attention",
+      "input": "Transformer 中的 self-attention 是怎么工作的?Q/K/V 各自的作用是什么?用 4-6 句话说明。",
+      "output": "Self-attention 的核心思想是：序列中的每个 token 在编码自己时，都可以“查看”序列里的其他 token，并根据相关性聚合它们的信息。  \n具体做法是先把每个 token 的表示线性映射成三个向量：Query（Q）、Key（K）、Value（V）。  \nQ 可以理解为“我想找什么信息”，K 是“我能提供什么信息的标签”，V 则是“真正要被取出的内容”。  \n通过计算当前 token 的 Q 和所有 token 的 K 的相似度，得到注意力分数，再经过 softmax 变成权重。  \n最后用这些权重对所有 V 做加权求和，就得到该 token 融合上下文后的新表示。  \n因此，Q/K 决定“关注谁”，V 决定“拿到什么信息”。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.97,
+          "passed": true,
+          "detail": "回答完整说明了 self-attention 的基本流程：token 间相互关注、Q/K/V 的来源与作用、QK 相似度计算、softmax 得到权重、对 V 加权求和形成新表示；表述清晰且符合 4-6 句要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "config": {}
+}
