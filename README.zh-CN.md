@@ -173,7 +173,7 @@ v0.4 —— 单轮 prompt 评测、基于文件的运行存储、带逐用例输
 
 - **技术深度文(中文):** [AI 回归测试需要统计显著性: 用 bootstrap CI 抗 LLM 噪声](https://zhuanlan.zhihu.com/p/2043351926964848178) —— 为什么点对点比较的 eval CI gate 在统计上就是错的、Evalith `--samples N` 背后的数学,以及一组可复现的 DeepSeek A/B 实验。
 - **续篇(中文):** [续:LLM 当 judge 自己也在抖](https://zhuanlan.zhihu.com/p/2044542154400322098) —— bootstrap CI 抗噪与三个 OSS eval 工具的同台对照。源文件 + 原始数据见 [`docs/blog/article2/`](docs/blog/article2/)。
-- **第三篇(中文):** [续之续:更严的统计方法 + 第三方 judge,article 2 的结论变了吗?](docs/blog/2026-06-01-article3-statistical-methods.zh.md) —— 把 BCa、paired bootstrap、BH FDR 加进 Evalith,在 article 2 同一份 frozen raw 数据上跑双路 gpt-5-mini cross-judge 实验。v0.5 release。
+- **第三篇(中文):** [续之续:更严的统计方法 + 第三方 judge,article 2 的结论变了吗?](https://zhuanlan.zhihu.com/p/2044820946721231928) —— 把 BCa、paired bootstrap、BH FDR 加进 Evalith,在 article 2 同一份 frozen raw 数据上跑双路 qwen-plus cross-judge 实验。v0.5 release。源文件 + 原始数据见 [`docs/blog/article3/`](docs/blog/article3/)。
 - **设计文档与 TDD 计划:** [`docs/`](docs/) —— v0.1 spec、v0.1/v0.2 任务级 plan,以及博客原文。
 
 ## 许可证
