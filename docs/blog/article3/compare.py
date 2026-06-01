@@ -75,8 +75,8 @@ print("| case | DS+DS (v0.4 baseline) | swap A: DS-out + Qwen judge | swap B: Qw
 print("|---|---|---|---|")
 for cid in CANONICAL:
     v0 = verdicts["percentile (v0.4)"][cid]
-    va = verdicts["swap A (DS-out+GPT-judge)"][cid]
-    vb = verdicts["swap B (GPT+GPT)"][cid]
+    va = verdicts["swap A (DS-out+Qwen-judge)"][cid]
+    vb = verdicts["swap B (Qwen+Qwen)"][cid]
     print(f"| `{cid}` | {v0} | {va} | {vb} |")
 
 # ===== §6 master matrix =====
