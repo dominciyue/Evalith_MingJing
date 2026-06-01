@@ -94,3 +94,85 @@ def test_run_eval_survives_provider_error(tmp_path):
     by_id = {r.case_id: r for r in run.results}
     assert by_id["good"].scores[0].passed is True
     assert by_id["bad"].scores and all(not s.passed for s in by_id["bad"].scores)
+
+
+# ---------------------------------------------------------------------------
+# Adaptive sampling tests (P5)
+# ---------------------------------------------------------------------------
+
+def test_run_eval_adaptive_stops_early_when_stable():
+    """Adaptive mode: when all pass_rate_samples are 1.0, stop at min_samples."""
+    from evalith.config import load_config
+    from evalith.engine import run_eval
+    from evalith.providers.base import EchoProvider
+
+    # examples/eval.yaml uses a `contains` scorer on echo model — always passes
+    cfg = load_config("examples/eval.yaml")
+    cfg = cfg.model_copy(update={
+        "adaptive": True,
+        "min_samples": 2,
+        "max_samples": 10,
+        "ci_tolerance": 0.05,
+    })
+    provider = EchoProvider()
+    run = run_eval(cfg, provider)
+    for case in run.results:
+        assert len(case.pass_rate_samples) == 2, (
+            f"{case.case_id}: expected stable case to stop at min_samples=2, "
+            f"got {len(case.pass_rate_samples)}"
+        )
+
+
+def test_run_eval_adaptive_runs_to_max_when_noisy(tmp_path):
+    """Adaptive mode: when pass-rate samples oscillate, run to max_samples."""
+    from evalith.config import EvalConfig, ScorerConfig
+    from evalith.engine import run_eval
+    from evalith.providers.base import Response
+
+    class FlipProvider:
+        """Alternates between matching and missing the expected text."""
+        model = "flip"
+
+        def __init__(self):
+            self.calls = 0
+
+        def complete(self, prompt, *, system=None, temperature=0.0):
+            self.calls += 1
+            text = "ok" if self.calls % 2 == 1 else "miss"
+            return Response(text=text)
+
+    ds = tmp_path / "ds.yaml"
+    ds.write_text(
+        "name: d\ncases:\n  - id: flipcase\n    input: x\n    expected: ok\n",
+        encoding="utf-8",
+    )
+    cfg = EvalConfig(
+        name="flip-noisy",
+        dataset=str(ds),
+        model="flip",
+        prompt_template="{{input}}",
+        scorers=[ScorerConfig(type="contains", params={"text": "ok"})],
+        adaptive=True,
+        min_samples=2,
+        max_samples=6,
+        ci_tolerance=0.01,
+    )
+    run = run_eval(cfg, FlipProvider())
+    case = run.results[0]
+    assert len(case.pass_rate_samples) == 6, (
+        f"expected adaptive to run to max=6 on noisy data, got {len(case.pass_rate_samples)}"
+    )
+
+
+def test_run_eval_fixed_samples_unchanged():
+    """Without adaptive flag, fixed --samples N path is identical to v0.5."""
+    from evalith.config import load_config
+    from evalith.engine import run_eval
+    from evalith.providers.base import EchoProvider
+
+    cfg = load_config("examples/eval.yaml")
+    cfg = cfg.model_copy(update={"samples": 3})
+    provider = EchoProvider()
+    run = run_eval(cfg, provider)
+    for case in run.results:
+        assert len(case.pass_rate_samples) == 3

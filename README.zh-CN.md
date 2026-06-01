@@ -155,6 +155,7 @@ API key。`llm_judge` 评分器可用 `params: {language: zh}` 进行中文评�
 ## v0.6 新功能
 
 - **`llm_judge` 支持 per-case `expected_concepts`。** 每个 dataset case 可声明 `expected_concepts: [...]`,judge prompt 自动把它当作"必须覆盖的概念清单"插入。补上 article 2/3 提到的 judge 没有 per-case checklist 的局限。完全向后兼容:不写这个字段的 case 与 v0.5 行为一致。
+- **Adaptive sampling(动态采样)。** `evalith run --adaptive --min-samples 2 --max-samples 10 --ci-tolerance 0.2` 每个 case 跑到 bootstrap CI 宽度小于阈值即停(或到 max_samples)。稳定 case 早停,省 API 钱;噪声 case 仍跑满。
 
 ## v0.5 新功能
 

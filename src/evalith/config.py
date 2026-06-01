@@ -21,6 +21,11 @@ class EvalConfig(BaseModel):
     concurrency: int = 1
     samples: int = 1  # run each case N times to measure LLM noise (>=2 enables bootstrap CI)
     scorers: list[ScorerConfig] = Field(default_factory=list)
+    # Adaptive sampling (P5) — opt-in via --adaptive flag or adaptive: true in config
+    adaptive: bool = False
+    min_samples: int = 2
+    max_samples: int = 10
+    ci_tolerance: float = 0.2
 
 
 def load_config(path: str | Path) -> EvalConfig:

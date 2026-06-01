@@ -156,6 +156,7 @@ every case's output, scores, tokens, cost, and latency — to `.evalith/runs/`.
 ## What's new in v0.6
 
 - **Per-case `expected_concepts` in `llm_judge`.** Each dataset case can now declare `expected_concepts: [...]` and the judge prompt automatically appends them as a coverage checklist. Closes the limitation noted in articles 2 and 3 (judge had no per-case checklist). Fully backward compatible: cases without `expected_concepts` behave identically to v0.5.
+- **Adaptive sampling.** `evalith run --adaptive --min-samples 2 --max-samples 10 --ci-tolerance 0.2` runs each case until the bootstrap CI on its pass-rate samples is narrower than the tolerance (or `max_samples` reached). Stable cases stop early — saves API cost without losing statistical signal on noisy ones.
 
 ## What's new in v0.5
 

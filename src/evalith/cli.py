@@ -29,14 +29,33 @@ def run(config: str, store: str = ".evalith",
             help="Parallel provider calls (default: from config, else 1)."),
         samples: int = typer.Option(None, "--samples",
             help="Run each case N times to measure LLM noise (N>=2 enables bootstrap CI in diff)."),
+        adaptive: bool = typer.Option(False, "--adaptive",
+            help="Adaptive sampling: stop when bootstrap CI width on per-case pass_rate < --ci-tolerance."),
+        min_samples: int = typer.Option(None, "--min-samples",
+            help="Min trials per case in adaptive mode (default 2)."),
+        max_samples: int = typer.Option(None, "--max-samples",
+            help="Max trials per case in adaptive mode (default 10)."),
+        ci_tolerance: float = typer.Option(None, "--ci-tolerance",
+            help="Stop when bootstrap CI width on per-case pass_rate < tol (default 0.2)."),
         fail_under: float = typer.Option(None, "--fail-under",
             help="Exit 1 if the pass rate is below this threshold (0..1)."),
         out: str = typer.Option(None, "--out",
             help="Also write the run JSON to this path (handy as a CI baseline).")) -> None:
     """Run an eval defined by CONFIG and save the resulting run."""
     cfg = load_config(config)
+    updates: dict = {}
     if samples is not None:
-        cfg = cfg.model_copy(update={"samples": samples})
+        updates["samples"] = samples
+    if adaptive:
+        updates["adaptive"] = True
+    if min_samples is not None:
+        updates["min_samples"] = min_samples
+    if max_samples is not None:
+        updates["max_samples"] = max_samples
+    if ci_tolerance is not None:
+        updates["ci_tolerance"] = ci_tolerance
+    if updates:
+        cfg = cfg.model_copy(update=updates)
     result = run_eval(cfg, get_provider(cfg.model), concurrency=concurrency)
     path = RunStore(store).save(result)
     if out:
