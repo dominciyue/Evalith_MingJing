@@ -127,7 +127,67 @@ sql-injection 的 p=0.0140 离 rank 2 的阈值 0.010 差了 0.004——四个�
 
 ## 五、换 judge: 一路只换,一路全换
 
-<TODO §5 — Task 20>
+文章 2 用 deepseek-chat 同时充当被测 model 和评分 judge。同源模型评同源输出,在 LLM-as-judge 文献里通常叫 affinity bias,judge 可能对"自己风格"的答案天然宽容。§7 会把它列为 limitation #3,但在写进 limitation 之前,先把它实测一遍。
+
+两条轨道各自有不同的控制变量。swap A 只换 judge,模型输出沿用文章 2 原文,判定差异完全由 judge 变化解释。swap B 同时换 model 和 judge,gpt-5-mini 既生成回答又评分。两轨 verdict 的差值部分反映 model 输出本身的贡献。
+
+### 实验环境的诚实交代
+
+计划是 gpt-4o-mini at temp=0,复刻文章 2 judge 的稳定性。实际能用的代理只放行 gpt-5 家族加 o-series,且强制 temperature=1。swap A 因此混了两件事:judge 换了家族,采样噪声也从 temp=0 变成了 temp=1。§7 会再提一次。
+
+### 主表:三列 verdict 对照
+
+| case | DS+DS (v0.4 baseline) | swap A: DS-out + GPT judge | swap B: GPT+GPT |
+|---|---|---|---|
+| `explain-rlhf` | unchanged | unchanged | unchanged |
+| `explain-vector-db` | unchanged | **regressed** | unchanged |
+| `sql-injection-vulnerability` | **regressed** | unchanged | unchanged |
+| `k8s-configmap-vs-secret` | unchanged | unchanged | unchanged |
+| `asyncio-yield-deadlock` | unchanged | unchanged | unchanged |
+| `python-gil-tradeoffs` | unchanged | unchanged | unchanged |
+| `redis-cluster-failover` | **regressed** | unchanged | unchanged |
+| `tcp-congestion-control` | unchanged | unchanged | unchanged |
+| `jwt-vs-session` | unchanged | unchanged | unchanged |
+| `transformer-attention` | unchanged | unchanged | unchanged |
+
+直接观察:基线 flagged 2/10(redis, sql-injection),swap A flagged 1/10(explain-vector-db),swap B flagged 0/10。
+
+三列没有任何一个 case 被共同判为 regressed。**两个 judge 对"什么算回退"的判定完全不重合**。
+
+### swap A 为什么彻底换了一个 case
+
+关键在 redis 的 judge 分歧。同一份 deepseek-chat 回答,交给两个 judge:
+
+| case | deepseek-chat judge mean | gpt-5-mini judge mean | gap |
+|---|---|---|---|
+| `redis-cluster-failover` | 0.80 | 0.00 | -0.80 |
+| 其余 9 个 case | 1.00 | 1.00 | +0.00 |
+
+gpt-5-mini 看同一份 redis 答案 5 次全打 0,deepseek-chat 自己评 5 次里 4 次给过。同一份文字,两个 judge,结论完全相反。
+
+分歧直接解释了 swap A 的 verdict:gpt-5-mini 在 baseline 里已经把 redis 评为 0.00,broken 版本同样是 0.00,Δ=0,无信号——baseline 就已经给了死分,broken 也不过原地踏步。sql-injection 同理,两端都是 1.00,Δ=0,消失。
+
+explain-vector-db 方向反过来:baseline 是 1.00,broken 跌到 0.00,Δ=-1.00 显著,进入 flagged。
+
+最终 flagged 集合从 `{redis, sql-injection}` 换成 `{explain-vector-db}`。不是加减,是整个集合替换了一遍。
+
+### swap B 为什么 0 个 regressed
+
+swap B 让 gpt-5-mini 生成回答再自评。a1 baseline 侧 10/10 全部 1.00。broken 侧 8/10 仍是 1.00,3 个 case 降到 0.80,但 Δ=-0.20 的 CI 仍然横跨 0,信号不足。
+
+**当 LLM 给自己的输出评分,它倾向于宽容**。工业界文献里反复提到这点,这次在 10 个真实 case 上实测了一遍。
+
+### 预测 4 和预测 5 的对照
+
+预测 4:"Swap A 让 verdict 大幅变化。"结果:flagged set 完全不重合——基线 `{redis, sql-injection}`,swap A `{explain-vector-db}`。**预测 4 CONFIRMED**,程度超出预期,比"大幅变化"还激进。
+
+预测 5:"A 和 B 的差距反映 model variance 贡献占比。"结果:A flags 1 个,B flags 0 个,集合不重合。差距真实,但 swap B 的 0/10 是自写答案本来就不差加上自评宽容的双重效应,model variance 只是其中一个因素。**预测 5 CONFIRMED with caveat**。
+
+### 这告诉我们什么
+
+选 judge 不是 administrative 决定,是科学决定。文章 2 的 2 个 regressed 换成 gpt-5-mini judge 后**没有任何一个还留下来**——不是消失,是被另一组完全不同的 case 替换。
+
+这不是说文章 2 错了。eval 工具报出的 verdict 是 model-judge 组合的属性,不是数据本身的属性。换个 judge,回归判定可以变得不可识别。
 
 ## 六、谁改变了我们的判定
 
