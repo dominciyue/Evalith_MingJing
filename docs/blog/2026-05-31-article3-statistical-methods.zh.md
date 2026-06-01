@@ -16,7 +16,7 @@
 
 ### 在看到结果之前,我先把 5 条预测写在这里
 
-把统计方法升级 + 换 judge,我**事先**预测如下:
+把统计方法升级 + 换 judge,我事先预测如下:
 
 1. **BCa 大概不会显著改变 verdict。** 文章 2 数据样本小(每 case 5 sample),分布近 0/1 二元,BCa 的修偏在这种分布上贡献有限。
 2. **Paired bootstrap CI 会收窄,但不足以让任何 unchanged 翻成 regressed。** 文章 2 的 unchanged case 几乎都是 mean=1.00 两边、Δ=0、零方差。收窄一个零宽度的 CI,结果仍然横跨 0。
@@ -34,7 +34,7 @@ Percentile bootstrap 直接切 bootstrap 分布的第 α/2 和第 1-α/2 分位�
 
 Evalith v0.5 的 BCa 是纯标准库实现:`statistics.NormalDist` 提供 Φ/Φ⁻¹,jackknife 在 A1∪B union 样本上逐次删一跑。dev extras 里挂 `scipy.stats.bootstrap(method='BCa')` 作 ground truth;在 redis-cluster-failover 这类噪声 fixture 上,两者 CI 边界差 < 0.10。
 
-**文章 2 frozen raw 的 BCa 与 percentile 对照:**
+文章 2 frozen raw 的 BCa 与 percentile 对照:
 
 | case | percentile CI | BCa CI |
 |---|---|---|
@@ -59,11 +59,11 @@ Evalith v0.5 的 BCa 是纯标准库实现:`statistics.NormalDist` 提供 Φ/Φ�
 
 Percentile bootstrap 把 before 和 after 当作两组独立样本各自重采样,然后做差。case 间的难度差异会混入 CI 的估计方差,但那部分不是我们想衡量的不确定性。
 
-Paired 改变重采样对象:**抽 case 索引** `i₁, ..., iₙ`,对每个抽到的 `i` 计算 `Δᵢ = after[i] - before[i]`,再取均值。同一次抽样里 before 和 after 看的是同一个 case,case 内的难度因子被同向抵消,理论上 CI 应该收窄。
+Paired 改变重采样对象:抽 case 索引 `i₁, ..., iₙ`,对每个抽到的 `i` 计算 `Δᵢ = after[i] - before[i]`,再取均值。同一次抽样里 before 和 after 看的是同一个 case,case 内的难度因子被同向抵消,理论上 CI 应该收窄。
 
 Evalith v0.5 的 `_bootstrap_paired` 用 `rng.randrange(n)` 抽索引,两数组等长为前提,否则抛 `ValueError`。单元测试用"每 case 偏移恰好 -0.1"的完美相关 fixture 验证了它:paired CI 压到 `[-0.10, -0.10]`(宽度 0),percentile 给 `[-0.46, +0.26]`(宽度 0.72)。
 
-**文章 2 frozen raw 的 paired 与 percentile CI 对照:**
+文章 2 frozen raw 的 paired 与 percentile CI 对照:
 
 | case | percentile CI | paired CI |
 |---|---|---|
@@ -140,12 +140,12 @@ sql-injection 的 p=0.0140 离 rank 2 的阈值 0.010 差了 0.004——四个�
 | case | DS+DS (v0.4 baseline) | swap A: DS-out + GPT judge | swap B: GPT+GPT |
 |---|---|---|---|
 | `explain-rlhf` | unchanged | unchanged | unchanged |
-| `explain-vector-db` | unchanged | **regressed** | unchanged |
-| `sql-injection-vulnerability` | **regressed** | unchanged | unchanged |
+| `explain-vector-db` | unchanged | regressed | unchanged |
+| `sql-injection-vulnerability` | regressed | unchanged | unchanged |
 | `k8s-configmap-vs-secret` | unchanged | unchanged | unchanged |
 | `asyncio-yield-deadlock` | unchanged | unchanged | unchanged |
 | `python-gil-tradeoffs` | unchanged | unchanged | unchanged |
-| `redis-cluster-failover` | **regressed** | unchanged | unchanged |
+| `redis-cluster-failover` | regressed | unchanged | unchanged |
 | `tcp-congestion-control` | unchanged | unchanged | unchanged |
 | `jwt-vs-session` | unchanged | unchanged | unchanged |
 | `transformer-attention` | unchanged | unchanged | unchanged |
