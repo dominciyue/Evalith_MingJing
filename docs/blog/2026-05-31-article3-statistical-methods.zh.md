@@ -86,7 +86,44 @@ Evalith v0.5 的 `_bootstrap_paired` 用 `rng.randrange(n)` 抽索引,两数组�
 
 ## 四、FDR: 当你同时检验 10 个 case 时
 
-<TODO §4 — Task 19>
+单个 case 用 α=0.05 检验,逻辑清楚:一次假设,错的概率 5%。但我们同时在 10 个 case 上做检验,每个都用同一个 5% 门槛,问题就出来了。假设 10 个 case 其实都没有真回退,每个 case 单独看,有 95% 概率不会被误标。10 个一起,至少一个被误标的概率是 `1 - (1 - 0.05)^10 ≈ 40%`。
+
+这个 40% 叫 family-wise 假阳率。它的意思是:在真正没有回退的数据集上,跑 percentile 检验,大约每两三次就会错误地标出至少一个 regressed case。10 个 case 并不算大的 eval set,很多团队会测 30、50 个 case,FWER 还会更高。1995 年,Benjamini 和 Hochberg 发表的 BH 方法放弃了控制 FWER 这个更严的目标,转而控制 **false discovery rate**——期望:在所有被判 regressed 的 case 中,真正误标的比例不超过 α。这个放宽让它在实践中比 Bonferroni 更有用。
+
+BH 的步骤是:把所有 case 的 p-value 升序排列,得到 p_(1) ≤ p_(2) ≤ ... ≤ p_(N)。对 rank k 设阈值 t_k = (k/N) × α。然后从大往小找——找最大的 k 满足 p_(k) ≤ t_k,接受 rank 1 到 k 全部为 regressed。直觉上:排越靠前、p 越小的 case,应该享受越严的阈值才算通过;排靠后的 case 虽然阈值更宽,但 p 本身也更大,大多数情况下还是过不了。
+
+这一批 case 的 bootstrap p-value 来自两边检验,n=1000 次重采样,seed=0,每个 case 统计在 1000 次中 Δ ≥ 0 的比例乘以 2:
+
+| case | p-value |
+|---|---|
+| `explain-rlhf` | 1.0000 |
+| `explain-vector-db` | 0.1660 |
+| `sql-injection-vulnerability` | 0.0140 |
+| `k8s-configmap-vs-secret` | 1.0000 |
+| `asyncio-yield-deadlock` | 0.1200 |
+| `python-gil-tradeoffs` | 1.0000 |
+| `redis-cluster-failover` | 0.0000 |
+| `tcp-congestion-control` | 1.0000 |
+| `jwt-vs-session` | 1.0000 |
+| `transformer-attention` | 1.0000 |
+
+redis 的 p=0.0000 说明 1000 次重采样里没有一次出现 Δ ≥ 0,bootstrap 分布完全压在 0 以下。sql-injection 的 p=0.0140 则意味着约 7 次出现 Δ ≥ 0,不能完全排除正向波动。其余 8 个 case 要么 p=1.0000(均值差为 0,对称分布),要么接近它。
+
+升序排列后走 BH:
+
+rank 1 是 redis,p=0.0000,阈值 (1/10)×0.05 = 0.005。0.0000 ≤ 0.005,通过。
+
+rank 2 是 sql-injection,p=0.0140,阈值 (2/10)×0.05 = 0.010。0.0140 > 0.010,**不通过**。
+
+rank 3 往后 asyncio、explain-vector-db、以及并列 1.0000 的六个 case 更不可能通过了。
+
+BH 的结论:最大通过的 rank 是 k=1。regressed 集合从 {sql-injection-vulnerability, redis-cluster-failover} 缩成 {redis-cluster-failover},**2/10 → 1/10**。这是本文四种方法里第一次改变判定结果的。
+
+sql-injection 的 p=0.0140 离 rank 2 的阈值 0.010 差了 0.004——四个千分之一。没有数量级的差距,只是没过那道线。BH 不是软性建议,规则是确定的。
+
+理解这个机制在实际工程里有几个含义。5 个 case 的 eval set,BH 几乎不会改变任何结果:阈值序列从 0.005 到 0.025,和未校正的 0.050 差距不大。10 到 30 个 case 是过渡区:本篇数据就处于这里,一两个边界 case 会被压下去。50 个 case 以上,percentile 单独跑下来假阳率会高得难以接受,BH 是必须打开的选项。简单说:**eval set 越大,越该开 BH**。Evalith 把它放在 `--multi-test bh` 而不是默认启用,是让你根据实验规模自己决定。
+
+§1 的预测 3 写的是:"FDR 在 10 case 上会把 sql-injection 翻成 unchanged。其 CI 离 0 较近,BH 校正后 p-value 可能不再通过 0.05 阈值。redis-cluster-failover 的 CI `[-1.00, -0.40]` 更远离 0,会留住。"**完全命中**。不只是"有 case 被翻",连哪个被翻、哪个留住都指对了。sql-injection rank 2,p=0.014,阈值 0.010,差 0.004 落选;redis rank 1,p=0.000,阈值 0.005,通过。预测 3 写的时候手头只有 percentile CI,没有跑过 BH,靠的是 CI 边界离 0 的距离来推断——这次推断成立了,文章 2 那种"假设全错"的结果这次没有复现。
 
 ## 五、换 judge: 一路只换,一路全换
 
