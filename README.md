@@ -176,6 +176,7 @@ roadmap. Issues and PRs welcome.
 
 - **Deep dive (Chinese):** [AI 回归测试需要统计显著性: 用 bootstrap CI 抗 LLM 噪声](https://zhuanlan.zhihu.com/p/2043351926964848178) — why point-to-point eval diffs are statistically wrong, the math behind Evalith's `--samples N`, and a reproducible DeepSeek A/B experiment.
 - **Follow-up (Chinese):** [续:LLM 当 judge 自己也在抖](https://zhuanlan.zhihu.com/p/2044542154400322098) — noise-immunity validation under high temperature + llm_judge, plus a 3-tool comparison against promptfoo and DeepEval. Source + raw data in [`docs/blog/article2/`](docs/blog/article2/).
+- **Second follow-up (Chinese):** [续之续:更严的统计方法 + 第三方 judge,article 2 的结论变了吗?](docs/blog/2026-06-01-article3-statistical-methods.zh.md) — Adds BCa, paired bootstrap, BH FDR to Evalith and runs a double-track GPT-5-mini cross-judge experiment on article 2's frozen raw data. v0.5 release.
 - **Design docs & TDD plans:** [`docs/`](docs/) — v0.1 spec, v0.1/v0.2 task-by-task plans, and the blog source.
 
 ## License
