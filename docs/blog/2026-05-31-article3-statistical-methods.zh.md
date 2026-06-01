@@ -57,7 +57,32 @@ Evalith v0.5 的 BCa 是纯标准库实现:`statistics.NormalDist` 提供 Φ/Φ�
 
 ## 三、Paired bootstrap: 利用 case 内相关性降方差
 
-<TODO §3 — Task 18>
+Percentile bootstrap 把 before 和 after 当作两组独立样本各自重采样,然后做差。case 间的难度差异会混入 CI 的估计方差,但那部分不是我们想衡量的不确定性。
+
+Paired 改变重采样对象:**抽 case 索引** `i₁, ..., iₙ`,对每个抽到的 `i` 计算 `Δᵢ = after[i] - before[i]`,再取均值。同一次抽样里 before 和 after 看的是同一个 case,case 内的难度因子被同向抵消,理论上 CI 应该收窄。
+
+Evalith v0.5 的 `_bootstrap_paired` 用 `rng.randrange(n)` 抽索引,两数组等长为前提,否则抛 `ValueError`。单元测试用"每 case 偏移恰好 -0.1"的完美相关 fixture 验证了它:paired CI 压到 `[-0.10, -0.10]`(宽度 0),percentile 给 `[-0.46, +0.26]`(宽度 0.72)。
+
+**文章 2 frozen raw 的 paired 与 percentile CI 对照:**
+
+| case | percentile CI | paired CI |
+|---|---|---|
+| `explain-rlhf` | [+0.00, +0.00] | [+0.00, +0.00] |
+| `explain-vector-db` | [-0.80, +0.00] | [-0.80, +0.00] |
+| `sql-injection-vulnerability` | [-1.00, -0.20] | [-1.00, -0.20] |
+| `k8s-configmap-vs-secret` | [+0.00, +0.00] | [+0.00, +0.00] |
+| `asyncio-yield-deadlock` | [-0.80, +0.00] | [-0.80, +0.00] |
+| `python-gil-tradeoffs` | [+0.00, +0.00] | [+0.00, +0.00] |
+| `redis-cluster-failover` | [-1.00, -0.40] | [-1.00, -0.40] |
+| `tcp-congestion-control` | [+0.00, +0.00] | [+0.00, +0.00] |
+| `jwt-vs-session` | [+0.00, +0.00] | [+0.00, +0.00] |
+| `transformer-attention` | [+0.00, +0.00] | [+0.00, +0.00] |
+
+10 行完全一致。Paired 没有产生任何收窄,flagged 集合和 percentile 相同,仍是 {sql-injection-vulnerability, redis-cluster-failover},2/10。
+
+原因在于数据结构本身。文章 2 的 `pass_rate_samples` 把每次 trial 的 `score >= 0.5` 拍成 0/1,单个 case 的 5 个值基本是近常数序列。**Paired 降方差的前提是 within-case 存在真实的变化空间**;重采样近常数序列均值几乎不变,和 unpaired 没有区别。二值化判分事先把那个变化空间压扁了。
+
+**预测 2** 说"Paired CI 收窄,但不足以让任何 unchanged 翻成 regressed"。结果比预测更极端:CI 完全没有收窄。预测的方向对了,但原因是"压根没收窄",而不是"收窄不够"。统计方法的威力是数据形态决定的,不是方法名称决定的。
 
 ## 四、FDR: 当你同时检验 10 个 case 时
 
