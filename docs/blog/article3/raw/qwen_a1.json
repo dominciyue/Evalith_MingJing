@@ -1,0 +1,259 @@
+{
+  "id": "aa8807f8c452",
+  "name": "qwen-swap-b-baseline",
+  "created_at": "2026-06-01T08:13:36.849224+00:00",
+  "model": "openai/qwen-plus",
+  "results": [
+    {
+      "case_id": "explain-rlhf",
+      "input": "用 4-6 句话解释 RLHF(从人类反馈中强化学习)是什么、为什么需要它,以及典型流程的主要环节。",
+      "output": "RLHF（Reinforcement Learning from Human Feedback，基于人类反馈的强化学习）是一种将人类偏好融入大语言模型训练的技术，旨在使模型输出更符合人类价值观、事实性和实用性。它之所以必要，是因为单纯依靠监督微调（SFT）难以覆盖所有理想行为维度，而人工编写奖励函数又过于复杂、主观且易出错。典型流程包含三个核心环节：首先对预训练模型进行监督微调（SFT），获得初步对齐的基础；其次收集人类对多组模型输出的偏好标注（如哪条回复更真实、有帮助），训练一个可泛化的奖励模型（RM）；最后以该RM作为奖励信号，用PPO等强化学习算法进一步优化语言模型，使其生成更受人类青睐的响应。整个过程实现了从“模仿回答”到“主动优化人类偏好的行为”的跃迁。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.95,
+          "passed": true,
+          "detail": "回答用5句话清晰覆盖了RLHF的定义、必要性（对比SFT和人工奖励函数的局限）、以及三阶段典型流程（SFT→RM训练→PPO优化），概念准确、逻辑连贯、术语规范，字数充足（约220字），完全满足4–6句、多核心概念充分解释的要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "explain-vector-db",
+      "input": "用 4-6 句话说明向量数据库与传统关系型数据库的核心区别,以及在 LLM 应用栈里的典型作用。",
+      "output": "向量数据库专为高效存储和检索高维向量（如文本、图像的嵌入）设计，核心能力是近似最近邻搜索（ANN），而关系型数据库以结构化表为核心，依赖精确匹配与SQL查询，不原生支持语义相似性检索。  \n向量数据库通常牺牲强事务（ACID）和复杂联表能力，换取在亿级向量下的毫秒级相似搜索性能；关系型数据库则强调数据一致性、完整性约束和复杂事务处理。  \n在LLM应用栈中，向量数据库常作为「检索增强生成（RAG）」的关键组件，将用户查询向量化后实时召回相关知识片段，为大模型提供上下文依据；而关系型数据库多用于管理元数据、用户信息、会话记录等结构化业务数据。  \n二者常协同工作：关系型库管“谁、何时、多少”，向量库管“像什么、相关否、语义近”。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.95,
+          "passed": true,
+          "detail": "回答严格控制在4-6句，清晰对比了二者在数据模型（向量vs表）、核心能力（ANN vs SQL/ACID）、性能权衡（语义检索速度vs事务一致性）、以及LLM栈中分工（RAG上下文检索vs元数据/业务数据管理）；并点明协同关系，覆盖全部核心概念且解释准确精炼。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "sql-injection-vulnerability",
+      "input": "下列伪代码 `db.query(\"SELECT * FROM users WHERE name = '\" + name + \"'\")` 在什么情况下不安全?该如何修?用 4-6 句话回答。",
+      "output": "该伪代码在 `name` 变量来自用户输入（如表单、URL 参数）且未经过滤时极不安全，会导致 SQL 注入攻击。攻击者可输入如 `' OR '1'='1` 使查询变为 `SELECT * FROM users WHERE name = '' OR '1'='1'`，从而绕过条件获取全部用户数据。  \n根本原因是字符串拼接将用户输入直接嵌入 SQL 语句，丧失了数据与代码的边界。  \n修复方式是使用参数化查询（预编译语句），例如 `db.query(\"SELECT * FROM users WHERE name = ?\", [name])`，由数据库驱动确保输入被严格作为参数处理，而非可执行 SQL。  \n此外，应配合最小权限原则和输入白名单校验（如仅允许字母数字），但参数化查询是防御 SQL 注入的首要且最有效手段。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.95,
+          "passed": true,
+          "detail": "回答完整覆盖了不安全条件（用户输入未过滤）、攻击原理（SQL注入示例及危害）、根本原因（字符串拼接破坏代码/数据边界）、核心修复方案（参数化查询及机制解释）、辅助措施（最小权限、白名单），并强调其首要性；共5句话，逻辑清晰，术语准确，字数约180字，符合4-6句要求且深度充分。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "k8s-configmap-vs-secret",
+      "input": "Kubernetes 的 ConfigMap 和 Secret 区别是什么,选择哪一个的依据是什么?用 4-6 句话说明。",
+      "output": "ConfigMap 用于存储非敏感的配置数据（如配置文件、环境变量、命令行参数），而 Secret 专为存储敏感信息（如密码、API 密钥、TLS 证书）设计，底层默认以 Base64 编码（非加密）并支持更严格的访问控制（如启用 Secret 挂载时的只读权限、RBAC 限制）。  \nSecret 在 etcd 中可被配置为加密存储（需启用 EncryptionConfiguration），而 ConfigMap 默认明文存储。  \n二者均可通过环境变量、卷挂载或命令行参数注入 Pod，但 Secret 更适合需要额外安全防护的场景。  \n选择依据主要看数据敏感性：若数据泄露可能危及系统安全（如数据库凭证），必须用 Secret；若仅为常规配置（如日志级别、超时时间），应优先使用 ConfigMap，更清晰、轻量且符合最小权限原则。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.95,
+          "passed": true,
+          "detail": "回答清晰区分了ConfigMap与Secret的用途、数据敏感性、存储方式（Base64编码 vs 可选加密）、安全机制（RBAC、只读挂载）、注入方式共性，以及选择依据（敏感性驱动+最小权限原则），覆盖所有核心概念且解释准确、简洁、无冗余，字数约180字，符合4–6句要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "asyncio-yield-deadlock",
+      "input": "在 Python asyncio 协程中调用 `time.sleep(1)` 会发生什么?为什么不能这样写?用 4-6 句话说明。",
+      "output": "在 asyncio 协程中直接调用 `time.sleep(1)` 会导致整个事件循环被**阻塞**，因为 `time.sleep()` 是同步的、CPU/线程阻塞式调用，会暂停当前线程（包括运行 asyncio 事件循环的主线程）。  \n这使得其他协程无法并发执行，严重违背 asyncio 的异步非阻塞设计初衷。  \n正确的替代方式是使用 `await asyncio.sleep(1)`，它是基于事件循环的异步等待，会挂起当前协程并让出控制权，允许其他任务继续运行。  \n此外，`time.sleep()` 在协程中调用还会触发 `RuntimeWarning`（如“coroutine ‘xxx’ was never awaited”可能间接暴露问题），且可能引发难以调试的性能瓶颈。  \n简言之：它破坏异步性、降低吞吐量、违背 asyncio 编程范式，应严格避免。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.95,
+          "passed": true,
+          "detail": "回答准确覆盖了阻塞事件循环、违背异步设计初衷、正确替代方案（asyncio.sleep）、警告提示与性能影响等核心概念，并清晰解释了机制差异（线程阻塞 vs 协程挂起），语言精炼，共5句话，字数约180字，符合4–6句要求且逻辑完整。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "python-gil-tradeoffs",
+      "input": "用 4-6 句话说明 Python 的 GIL 是什么、它对 CPU 密集型多线程任务的影响,以及常见绕开方式。",
+      "output": "Python 的全局解释器锁（GIL）是一个互斥锁，确保同一时刻只有一个线程执行 Python 字节码，这是 CPython 解释器为简化内存管理（尤其是引用计数）而引入的设计约束。  \n它对 CPU 密集型多线程任务影响显著：即使在多核 CPU 上，多个 Python 线程也无法真正并行执行计算，实际性能几乎不优于单线程，甚至因线程切换开销而更差。  \n但 GIL 不会阻碍 I/O 密集型任务的并发，因为线程在等待 I/O 时会主动释放 GIL，允许其他线程运行。  \n常见绕过方式包括：使用 `multiprocessing` 模块启动多个进程（每个进程拥有独立解释器和 GIL）；调用释放 GIL 的 C 扩展（如 NumPy、SciPy 的底层运算）；或改用无 GIL 的 Python 实现（如 PyPy 在特定模式下、Jython、或较新的 GraalPython）。  \n此外，异步编程（`asyncio`）虽不绕过 GIL，但能高效处理高并发 I/O 场景，是另一种重要的并发范式补充。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.95,
+          "passed": true,
+          "detail": "回答准确、完整覆盖GIL定义、对CPU密集型多线程的负面影响、I/O密集型的例外情况，以及三种主流绕过方式（multiprocessing、释放GIL的C扩展、无GIL解释器），并补充说明asyncio的适用边界；语言精炼，逻辑清晰，字数适中（约220字），符合4–6句要求且无事实错误。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "redis-cluster-failover",
+      "input": "Redis Cluster 中,一个主节点宕机后,从节点是如何被选举为新主、客户端流量是如何被重定向的?用 4-6 句话说明流程。",
+      "output": "当主节点宕机后，其所属哈希槽的从节点会发起故障转移：首先，其他主节点通过心跳检测到该主节点失联（超时未响应 PING），并在集群中广播 FAIL 状态；随后，满足条件（如复制偏移量足够新、自身状态正常）的从节点向其他主节点发起选举请求（FAILOVER_AUTH_REQUEST），获得大多数主节点的投票（≥ N/2+1）后升级为新主；新主节点接管原主的哈希槽，更新自身配置纪元（config epoch）并广播 CLUSTER NODES 信息；客户端在执行命令时若收到 MOVED 或 ASK 重定向响应（或通过集群模式客户端自动刷新槽映射），将后续请求路由至新主节点；Redis Cluster 客户端（如 JedisCluster、redis-py cluster）通常内置重试与槽位缓存刷新机制，实现流量自动重定向。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.95,
+          "passed": true,
+          "detail": "回答完整覆盖了故障检测（心跳/PING超时、FAIL广播）、选举机制（FAILOVER_AUTH_REQUEST、多数投票条件）、主节点升级（配置纪元更新、槽接管）、重定向方式（MOVED/ASK响应、客户端自动刷新）及客户端行为（内置重试与槽缓存刷新），共5个核心环节，解释准确清晰，字数约180字，符合4-6句要求且无事实错误。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "tcp-congestion-control",
+      "input": "TCP 拥塞控制中,慢启动和拥塞避免阶段的核心区别是什么?用 4-6 句话说明。",
+      "output": "慢启动和拥塞避免是TCP拥塞控制的两个核心阶段，主要区别在于窗口增长策略与触发条件不同。慢启动在连接初始或超时重传后启用，以指数方式增长拥塞窗口（cwnd）：每收到一个ACK，cwnd增加1个MSS，即每轮RTT翻倍，旨在快速探测可用带宽。拥塞避免则在cwnd达到慢启动阈值（ssthresh）后启动，改为线性增长：每轮RTT仅增加1个MSS（即每个ACK仅增加1/cwnd），以更谨慎地逼近网络容量。慢启动侧重“快速探索”，而拥塞避免侧重“平稳逼近”，二者协同实现效率与稳定性的平衡。当发生丢包（如超时或3个重复ACK）时，TCP会下调ssthresh并可能退回慢启动或进入快速恢复，从而动态切换阶段。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.95,
+          "passed": true,
+          "detail": "回答准确区分了慢启动与拥塞避免的触发条件（初始/超时 vs 达到ssthresh）、增长模式（指数 vs 线性）、增长机制（每ACK增1 MSS vs 每RTT增1 MSS或每ACK增1/cwnd）、设计目标（快速探测 vs 平稳逼近），并简要提及阶段切换机制（丢包响应），覆盖全部核心概念且解释清晰、术语规范、逻辑严谨，字数约180字，远超80字要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "jwt-vs-session",
+      "input": "JWT 与传统服务端 session 在认证上的核心权衡是什么?用 4-6 句话说明。",
+      "output": "JWT 与传统服务端 Session 的核心权衡在于**状态管理位置与控制粒度的取舍**：JWT 是无状态的，令牌本身携带全部认证信息（如用户 ID、角色、过期时间），服务端无需存储会话数据，提升了可扩展性和分布式部署能力；但一旦签发便无法主动失效（如用户登出或权限变更时需依赖黑名单或短有效期缓解），且令牌体积较大、敏感信息需严格签名/加密。  \n相比之下，传统 Session 将状态保存在服务端（如 Redis 或数据库），天然支持即时吊销、动态权限更新和细粒度会话控制，但引入了存储依赖、单点故障风险及跨服务共享 session 的复杂性。  \n因此，JWT 更适合轻量、高并发、无状态微服务场景；而传统 Session 更适用于需要强会话管控、安全性要求极高或频繁变更权限的系统。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.95,
+          "passed": true,
+          "detail": "回答精准覆盖核心权衡的四个维度：状态位置（无状态JWT vs 有状态服务端Session）、可扩展性与分布式能力、失效控制能力（主动吊销难易）、安全与管控粒度；并延伸说明适用场景，解释清晰、对比明确，字数适中（约220字），无事实错误。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "case_id": "transformer-attention",
+      "input": "Transformer 中的 self-attention 是怎么工作的?Q/K/V 各自的作用是什么?用 4-6 句话说明。",
+      "output": "Self-attention 通过计算输入序列中每个位置对其他所有位置的“相关性”来动态聚合全局上下文信息。首先将输入向量分别线性投影为查询（Q）、键（K）和值（V）三组向量：Q 表示当前词“想关注什么”，K 表示其他词“能被关注什么”，V 则承载其他词的实际语义信息。接着，用 Q 与所有 K 的点积衡量两两之间的相似度（缩放后经 softmax 归一化为注意力权重），再用这些权重对 V 加权求和，得到该位置的上下文感知表征。整个过程允许模型在不同位置并行建模长程依赖，且不依赖序列顺序（位置编码弥补此限制）。Q/K/V 的可学习投影矩阵使模型能自适应地学习关注哪些特征组合。",
+      "scores": [
+        {
+          "scorer": "llm_judge",
+          "value": 0.95,
+          "passed": true,
+          "detail": "回答在5句话内清晰覆盖了self-attention的核心机制（相关性计算、Q/K/V投影与语义角色、点积相似度与softmax加权、并行性与长程依赖、可学习投影的作用），准确区分Q（查询意图）、K（匹配标识）、V（信息载体）的功能，语言精炼且无事实错误，字数约180字，符合4–6句要求。"
+        }
+      ],
+      "latency_ms": 0.0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "cost_usd": 0.0,
+      "pass_rate_samples": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "config": {}
+}
