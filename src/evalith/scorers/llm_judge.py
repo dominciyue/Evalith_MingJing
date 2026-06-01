@@ -51,8 +51,20 @@ class LLMJudge:
         self.language = language if language in JUDGE_PROMPTS else "en"
 
     def score(self, case: TestCase, output: str) -> Score:
+        # Build effective criteria — append expected_concepts checklist if present
+        criteria_eff = self.criteria or "overall quality"
+        if case.expected_concepts:
+            concept_lines = "\n".join(f"- {c}" for c in case.expected_concepts)
+            if self.language == "zh":
+                criteria_eff = (
+                    f"{criteria_eff}\n\n核心概念清单(回答须覆盖):\n{concept_lines}"
+                )
+            else:
+                criteria_eff = (
+                    f"{criteria_eff}\n\nExpected concepts (response must cover):\n{concept_lines}"
+                )
         prompt = JUDGE_PROMPTS[self.language].format(
-            input=case.input, output=output, criteria=self.criteria or "overall quality"
+            input=case.input, output=output, criteria=criteria_eff
         )
         resp = self.provider.complete(prompt, temperature=0.0)
         try:

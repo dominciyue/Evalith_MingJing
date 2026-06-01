@@ -153,6 +153,10 @@ every case's output, scores, tokens, cost, and latency — to `.evalith/runs/`.
 `diff` compares two saved runs case-by-case and labels each **improved / regressed
 / unchanged / new / removed**.
 
+## What's new in v0.6
+
+- **Per-case `expected_concepts` in `llm_judge`.** Each dataset case can now declare `expected_concepts: [...]` and the judge prompt automatically appends them as a coverage checklist. Closes the limitation noted in articles 2 and 3 (judge had no per-case checklist). Fully backward compatible: cases without `expected_concepts` behave identically to v0.5.
+
 ## What's new in v0.5
 
 - **`--ci-method bca`** — BCa (bias-corrected and accelerated) bootstrap on Δ. Stdlib-only; more accurate than percentile when the bootstrap distribution is skewed.

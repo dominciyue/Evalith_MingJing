@@ -152,6 +152,10 @@ API key。`llm_judge` 评分器可用 `params: {language: zh}` 进行中文评�
 延迟的 JSON 快照)保存到 `.evalith/runs/`。`diff` 逐条比较两次保存的 Run,把每条
 用例标记为**改进 / 回退 / 不变 / 新增 / 移除**。
 
+## v0.6 新功能
+
+- **`llm_judge` 支持 per-case `expected_concepts`。** 每个 dataset case 可声明 `expected_concepts: [...]`,judge prompt 自动把它当作"必须覆盖的概念清单"插入。补上 article 2/3 提到的 judge 没有 per-case checklist 的局限。完全向后兼容:不写这个字段的 case 与 v0.5 行为一致。
+
 ## v0.5 新功能
 
 - **`--ci-method bca`** —— Δ 上的 BCa(偏置纠正加速)bootstrap。仅依赖 Python 标准库;在 bootstrap 分布偏态时比 percentile 更准。

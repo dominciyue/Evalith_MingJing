@@ -39,6 +39,7 @@ def load_dataset(path: str | Path) -> Dataset:
                 id=str(row.get("id") or i),
                 input=row["input"],
                 expected=row.get("expected"),
+                expected_concepts=row.get("expected_concepts") or None,
                 metadata=row.get("metadata") or {},
             ))
         return Dataset(name=p.stem, cases=cases)

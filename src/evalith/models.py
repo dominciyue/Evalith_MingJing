@@ -10,6 +10,7 @@ class TestCase(BaseModel):
     id: str
     input: str
     expected: str | None = None
+    expected_concepts: list[str] | None = None
     metadata: dict = Field(default_factory=dict)
 
 
