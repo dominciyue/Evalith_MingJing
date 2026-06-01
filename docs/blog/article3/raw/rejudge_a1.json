@@ -1,0 +1,122 @@
+[
+  {
+    "case_id": "explain-rlhf",
+    "pass_rate_samples": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "input": "用 4-6 句话解释 RLHF(从人类反馈中强化学习)是什么、为什么需要它,以及典型流程的主要环节。",
+    "output_used": "RLHF（Reinforcement Learning from Human Feedback，从人类反馈中强化学习）是一种将人类偏好融入模型训练的技术，主要用于让语言模型（如ChatGPT）的输出更符合人类的期望。之所以需要它，是因为单纯"
+  },
+  {
+    "case_id": "explain-vector-db",
+    "pass_rate_samples": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "input": "用 4-6 句话说明向量数据库与传统关系型数据库的核心区别,以及在 LLM 应用栈里的典型作用。",
+    "output_used": "向量数据库与传统关系型数据库的核心区别在于数据存储和查询方式：关系型数据库以行和列的表格形式存储结构化数据，通过精确匹配或范围查询检索；而向量数据库存储的是高维向量（如文本或图像的嵌入表示），并通过计算向量间的余弦相似度或欧几里得距离进行近"
+  },
+  {
+    "case_id": "sql-injection-vulnerability",
+    "pass_rate_samples": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "input": "下列伪代码 `db.query(\"SELECT * FROM users WHERE name = '\" + name + \"'\")` 在什么情况下不安全?该如何修?用 4-6 句话回答。",
+    "output_used": "这段伪代码不安全的情况是：当 `name` 变量包含恶意 SQL 代码（如 `' OR 1=1 --`）时，会导致 SQL 注入攻击，攻击者可以绕过身份验证、窃取或篡改数据库数据。修复方法是使用**参数化查询**（Prepared Stat"
+  },
+  {
+    "case_id": "k8s-configmap-vs-secret",
+    "pass_rate_samples": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "input": "Kubernetes 的 ConfigMap 和 Secret 区别是什么,选择哪一个的依据是什么?用 4-6 句话说明。",
+    "output_used": "ConfigMap 用于存储非敏感的明文配置数据（如环境变量、配置文件），而 Secret 则用于存储敏感信息（如密码、密钥、证书），并支持 base64 编码以及可选的加密。选择依据主要看数据是否敏感：如果配置内容包含密码、令牌等私密信息"
+  },
+  {
+    "case_id": "asyncio-yield-deadlock",
+    "pass_rate_samples": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "input": "在 Python asyncio 协程中调用 `time.sleep(1)` 会发生什么?为什么不能这样写?用 4-6 句话说明。",
+    "output_used": "在 Python asyncio 协程中调用 `time.sleep(1)` 会阻塞整个事件循环，导致所有协程任务暂停执行。这是因为 `time.sleep` 是同步阻塞操作，它会阻塞当前线程的代码执行，而异步事件循环正是运行在这个线程上。"
+  },
+  {
+    "case_id": "python-gil-tradeoffs",
+    "pass_rate_samples": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "input": "用 4-6 句话说明 Python 的 GIL 是什么、它对 CPU 密集型多线程任务的影响,以及常见绕开方式。",
+    "output_used": "Python 的 GIL（Global Interpreter Lock，全局解释器锁）是 CPython 解释器中的一个互斥锁，它确保同一时刻只有一个线程可以执行 Python 字节码。对于 CPU 密集型任务（如大量数学计算），GIL "
+  },
+  {
+    "case_id": "redis-cluster-failover",
+    "pass_rate_samples": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "input": "Redis Cluster 中,一个主节点宕机后,从节点是如何被选举为新主、客户端流量是如何被重定向的?用 4-6 句话说明流程。",
+    "output_used": "当 Redis Cluster 中的主节点宕机后，其从节点会通过 Raft 风格的共识算法发起选举。从节点检查自己的 replication offset（数据复制偏移量）是否足够新（通常需低于 70% 的处于互动状态的主节点拥有该数据），"
+  },
+  {
+    "case_id": "tcp-congestion-control",
+    "pass_rate_samples": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "input": "TCP 拥塞控制中,慢启动和拥塞避免阶段的核心区别是什么?用 4-6 句话说明。",
+    "output_used": "TCP 拥塞控制中，慢启动（Slow Start）和拥塞避免（Congestion Avoidance）的核心区别在于窗口增长策略不同。在慢启动阶段，每收到一个 ACK（确认包），拥塞窗口（cwnd）就增加一个 MSS（最大报文段长度），因"
+  },
+  {
+    "case_id": "jwt-vs-session",
+    "pass_rate_samples": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "input": "JWT 与传统服务端 session 在认证上的核心权衡是什么?用 4-6 句话说明。",
+    "output_used": "JWT 的核心权衡在于将认证状态从服务端转移到客户端：服务端无需存储会话，天然支持分布式与无状态扩展，但同时也失去了对令牌的即时控制能力。传统 Session 依赖服务端内存或存储，能随时撤销会话，但在分布式环境下需要引入共享存储（如 Re"
+  },
+  {
+    "case_id": "transformer-attention",
+    "pass_rate_samples": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "input": "Transformer 中的 self-attention 是怎么工作的?Q/K/V 各自的作用是什么?用 4-6 句话说明。",
+    "output_used": "自注意力机制通过计算序列中每个位置与其他位置的相关性来动态聚合全局信息。输入序列首先通过三个不同的线性变换分别生成查询（Q）、键（K）和值（V）矩阵。Q与K的点积经过缩放（除以√d_k）和Softmax操作得到注意力权重，表示每个位置对其他"
+  }
+]
