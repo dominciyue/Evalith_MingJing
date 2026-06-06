@@ -1,0 +1,19 @@
+# v0.7 acceptance: judge consensus panel on the article-4 30-case stratified set.
+# Reproduces the article's domain structure: code = low consensus (qwen zeroes
+# deepseek's code), safety/concept = consensus zones.
+# Run: DEEPSEEK_API_KEY=... DASHSCOPE_API_KEY=... \
+#   evalith run docs/blog/article4/configs/eval.panel-accept.yaml
+name: panel-accept-v07
+dataset: docs/blog/article4/qa.small.yaml
+model: deepseek-chat
+prompt_template: "{{input}}"
+temperature: 1.0
+samples: 3
+concurrency: 4
+scorers:
+  - type: llm_judge
+    params:
+      criteria: 回答应当准确、相关、覆盖问题的核心概念,无事实错误
+      language: zh
+      judge_model: deepseek-chat
+      panel: [qwen-plus]
