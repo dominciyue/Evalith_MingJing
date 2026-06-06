@@ -295,3 +295,42 @@ def test_no_panel_runs_byte_identical_to_v06(tmp_path):
     cr = run.results[0]
     assert cr.panel_samples == {} and cr.panel_details == {}
     assert cr.judge_tokens == 0 and cr.judge_cost_usd == 0.0
+
+
+def test_primary_failure_keeps_panel_trials_aligned(tmp_path):
+    """A trial where the PRIMARY model errors must record MISSING for every
+    panel judge, keeping panel_samples aligned with pass_rate_samples."""
+    from evalith.consensus import MISSING
+    from evalith.providers.base import Response
+
+    class FlakyOnceProvider:
+        """First call raises, subsequent calls succeed."""
+        model = "flaky-once"
+
+        def __init__(self):
+            self.calls = 0
+
+        def complete(self, prompt, *, system=None, temperature=0.0):
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError("boom")
+            return Response(text="answer")
+
+    ds = tmp_path / "ds.yaml"
+    ds.write_text("name: d\ncases:\n  - id: c1\n    input: hi\n", encoding="utf-8")
+    cfg = EvalConfig(
+        name="t", dataset=str(ds), model="flaky-once", prompt_template="{{input}}",
+        samples=3,
+        scorers=[ScorerConfig(type="llm_judge", params={
+            "criteria": "q",
+            "judge_model": f"echo:{PASS_JSON}",
+            "panel": [f"echo:{FAIL_JSON}"],
+        })],
+    )
+    run = run_eval(cfg, FlakyOnceProvider())
+    cr = run.results[0]
+    key = f"echo:{FAIL_JSON}"
+    assert len(cr.pass_rate_samples) == 3
+    assert len(cr.panel_samples[key]) == 3                  # aligned!
+    assert cr.panel_samples[key][0] == MISSING              # errored trial -> MISSING
+    assert cr.panel_samples[key][1:] == [0.0, 0.0]          # later trials judged normally

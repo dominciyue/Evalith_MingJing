@@ -113,9 +113,11 @@ def run_eval(config: EvalConfig, provider: Provider,
                                if s is not None and s.detail},
             )
         except Exception as e:  # one failed case must not kill the whole run
+            panel_judges = [j for sc in scorers for j in (getattr(sc, "panel", None) or {})]
             return CaseResult(case_id=case.id, input=case.input, output="", domain=domain,
                               scores=[Score(scorer="error", value=0.0, passed=False,
-                                            detail=f"{type(e).__name__}: {e}")])
+                                            detail=f"{type(e).__name__}: {e}")],
+                              panel_samples={j: [MISSING] for j in panel_judges})
 
     def _trial_pass_rate(cr: CaseResult) -> float:
         return sum(1 for s in cr.scores if s.passed) / len(cr.scores) if cr.scores else 0.0
