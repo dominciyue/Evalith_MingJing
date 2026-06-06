@@ -11,6 +11,7 @@ class TestCase(BaseModel):
     input: str
     expected: str | None = None
     expected_concepts: list[str] | None = None
+    domain: str | None = None
     metadata: dict = Field(default_factory=dict)
 
 
@@ -37,6 +38,12 @@ class CaseResult(BaseModel):
     total_tokens: int = 0
     cost_usd: float = 0.0
     pass_rate_samples: list[float] = Field(default_factory=list)  # one per trial when samples>1
+    domain: str | None = None
+    # Judge consensus panel (v0.7) — diagnostics only, never part of the gate
+    panel_samples: dict[str, list[float]] = Field(default_factory=dict)  # judge -> per-trial pass (−1.0 = judge call failed)
+    panel_details: dict[str, str] = Field(default_factory=dict)          # judge -> representative reason
+    judge_tokens: int = 0       # primary + panel judging calls combined
+    judge_cost_usd: float = 0.0
 
     @property
     def mean_score(self) -> float:
@@ -69,6 +76,14 @@ class Run(BaseModel):
     @property
     def total_cost_usd(self) -> float:
         return sum(r.cost_usd for r in self.results)
+
+    @property
+    def total_judge_tokens(self) -> int:
+        return sum(r.judge_tokens for r in self.results)
+
+    @property
+    def total_judge_cost_usd(self) -> float:
+        return sum(r.judge_cost_usd for r in self.results)
 
     @property
     def mean_latency_ms(self) -> float:
