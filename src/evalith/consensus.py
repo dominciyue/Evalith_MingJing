@@ -15,7 +15,10 @@ PRIMARY = "primary"
 
 
 def cohen_kappa(a: list[int], b: list[int]) -> float:
-    """Cohen's kappa for two equal-length binary label vectors."""
+    """Cohen's kappa for two equal-length binary label vectors.
+
+    Returns NaN when the vectors are empty or length-mismatched.
+    """
     n = len(a)
     if n == 0 or n != len(b):
         return float("nan")
@@ -48,7 +51,11 @@ def case_spread(case: CaseResult) -> float:
 
 
 def _trial_series(run: Run) -> dict[str, list[float]]:
-    """Flat per-(case, trial) value series per judge, MISSING-padded to align."""
+    """Flat per-(case, trial) value series per judge, MISSING-padded to align.
+
+    Trial count per case is defined by the primary judge (pass_rate_samples);
+    panel judges are padded/truncated to match.
+    """
     judges = [PRIMARY] + sorted({j for r in run.results for j in r.panel_samples})
     series: dict[str, list[float]] = {j: [] for j in judges}
     for r in run.results:
