@@ -1,5 +1,5 @@
 from evalith.models import TestCase
-from evalith.providers.base import FakeProvider
+from evalith.providers.base import FakeProvider, Response
 from evalith.scorers.llm_judge import LLMJudge
 
 
@@ -103,3 +103,80 @@ def test_dataset_loads_expected_concepts_field(tmp_path):
     assert len(ds.cases) == 2
     assert ds.cases[0].expected_concepts == ["c1", "c2", "c3"]
     assert ds.cases[1].expected_concepts is None or ds.cases[1].expected_concepts == []
+
+
+# ---------------------------------------------------------------------------
+# v0.7 — panel scoring + usage tracking
+# ---------------------------------------------------------------------------
+
+def _case():
+    return TestCase(id="c", input="q")
+
+
+def test_score_with_usage_returns_tokens_and_cost():
+    class CostedProvider:
+        model = "fake"
+
+        def complete(self, prompt, *, system=None, temperature=0.0):
+            return Response(text='{"score": 1.0, "pass": true, "reason": "ok"}',
+                            total_tokens=42, cost_usd=0.001)
+
+    judge = LLMJudge(provider=CostedProvider())
+    score, tokens, cost = judge.score_with_usage(_case(), "ans")
+    assert score.passed is True
+    assert tokens == 42
+    assert abs(cost - 0.001) < 1e-9
+
+
+def test_panel_score_judges_with_every_panel_member():
+    good = FakeProvider(default='{"score": 1.0, "pass": true, "reason": "fine"}')
+    harsh = FakeProvider(default='{"score": 0.0, "pass": false, "reason": "bad code"}')
+    judge = LLMJudge(provider=good, panel={"harsh": harsh, "kind": good})
+    results, tokens, cost = judge.panel_score(_case(), "ans", cache={})
+    assert results["harsh"].passed is False
+    assert results["harsh"].detail == "bad code"
+    assert results["kind"].passed is True
+
+
+def test_panel_score_provider_failure_yields_none():
+    class BoomProvider:
+        model = "boom"
+
+        def complete(self, prompt, *, system=None, temperature=0.0):
+            raise RuntimeError("rate limited")
+
+    ok = FakeProvider(default='{"score": 1.0, "pass": true, "reason": "ok"}')
+    judge = LLMJudge(provider=ok, panel={"boom": BoomProvider(), "ok": ok})
+    results, _, _ = judge.panel_score(_case(), "ans", cache={})
+    assert results["boom"] is None          # failed judge recorded as missing
+    assert results["ok"].passed is True     # others unaffected
+
+
+def test_panel_score_caches_identical_output():
+    class CountingProvider:
+        model = "count"
+
+        def __init__(self):
+            self.calls = 0
+
+        def complete(self, prompt, *, system=None, temperature=0.0):
+            self.calls += 1
+            return Response(text='{"score": 1.0, "pass": true, "reason": "ok"}')
+
+    counting = CountingProvider()
+    judge = LLMJudge(provider=FakeProvider(default='{"score": 1.0, "pass": true}'),
+                     panel={"j": counting})
+    cache = {}
+    judge.panel_score(_case(), "same output", cache)
+    judge.panel_score(_case(), "same output", cache)   # second trial, same text
+    assert counting.calls == 1
+
+
+def test_panel_parse_error_is_fail_score_not_missing():
+    garbage = FakeProvider(default="not json at all")
+    judge = LLMJudge(provider=FakeProvider(default='{"score": 1.0, "pass": true}'),
+                     panel={"g": garbage})
+    results, _, _ = judge.panel_score(_case(), "ans", cache={})
+    assert results["g"] is not None
+    assert results["g"].passed is False
+    assert "judge parse error" in results["g"].detail
