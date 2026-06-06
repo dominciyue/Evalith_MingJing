@@ -1,0 +1,14 @@
+# Judge consensus panel: primary judge gates, panel judges diagnose.
+# Run: DEEPSEEK_API_KEY=... DASHSCOPE_API_KEY=... evalith run examples/eval.panel.yaml
+name: panel-demo
+dataset: examples/dataset.yaml
+model: deepseek-chat
+samples: 3
+scorers:
+  - type: llm_judge
+    params:
+      criteria: 回答应当准确、覆盖核心概念
+      language: zh
+      judge_model: deepseek-chat      # primary judge — the only one that gates
+      panel: [qwen-plus]              # diagnostic judges — agreement stats only
+      consensus_threshold: 0.5        # spread >= 0.5 flags ⚠ low consensus
