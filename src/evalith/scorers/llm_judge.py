@@ -46,12 +46,11 @@ class LLMJudge:
     name = "llm_judge"
 
     def __init__(self, provider, criteria: str = "", language: str = "en",
-                 panel: dict | None = None, consensus_threshold: float = 0.5):
+                 panel: dict | None = None):
         self.provider = provider
         self.criteria = criteria
         self.language = language if language in JUDGE_PROMPTS else "en"
         self.panel = panel or {}                      # judge name -> Provider
-        self.consensus_threshold = consensus_threshold
 
     def _build_prompt(self, case: TestCase, output: str) -> str:
         # Build effective criteria — append expected_concepts checklist if present

@@ -36,3 +36,32 @@ def test_build_scorer_unknown_raises():
 
     with pytest.raises(ValueError):
         build_scorer(ScorerConfig(type="nope"))
+
+
+def test_build_llm_judge_with_judge_model_and_panel():
+    cfg = ScorerConfig(type="llm_judge", params={
+        "criteria": "quality",
+        "judge_model": "echo:primary-judge",
+        "panel": ["echo:panel-a", "echo:panel-b"],
+    })
+    judge = build_scorer(cfg, judge_provider=None)
+    assert judge.provider.fixed == "primary-judge"        # judge_model resolved
+    assert set(judge.panel) == {"echo:panel-a", "echo:panel-b"}
+
+
+def test_build_llm_judge_panel_dedupes_primary():
+    cfg = ScorerConfig(type="llm_judge", params={
+        "judge_model": "echo:j",
+        "panel": ["echo:j", "echo:other", "echo:other"],
+    })
+    judge = build_scorer(cfg, judge_provider=None)
+    assert list(judge.panel) == ["echo:other"]            # primary + dup removed
+
+
+def test_build_llm_judge_defaults_unchanged():
+    from evalith.providers.base import FakeProvider
+    fp = FakeProvider()
+    cfg = ScorerConfig(type="llm_judge", params={"criteria": "q"})
+    judge = build_scorer(cfg, judge_provider=fp)
+    assert judge.provider is fp                           # falls back, v0.6 behavior
+    assert judge.panel == {}

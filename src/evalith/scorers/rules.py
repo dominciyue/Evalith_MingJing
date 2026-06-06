@@ -50,8 +50,16 @@ def build_scorer(cfg: ScorerConfig, judge_provider=None) -> Scorer:
     if cfg.type == "regex":
         return Regex(pattern=cfg.params["pattern"])
     if cfg.type == "llm_judge":
+        from ..providers import get_provider
         from .llm_judge import LLMJudge
 
-        return LLMJudge(provider=judge_provider, criteria=cfg.params.get("criteria", ""),
-                        language=cfg.params.get("language", "en"))
+        judge_model = cfg.params.get("judge_model")
+        primary = get_provider(judge_model) if judge_model else judge_provider
+        panel_models = [m for m in dict.fromkeys(cfg.params.get("panel") or [])
+                        if m and m != judge_model]
+        panel = {m: get_provider(m) for m in panel_models}
+        return LLMJudge(provider=primary,
+                        criteria=cfg.params.get("criteria", ""),
+                        language=cfg.params.get("language", "en"),
+                        panel=panel)
     raise ValueError(f"Unknown scorer type: {cfg.type}")
