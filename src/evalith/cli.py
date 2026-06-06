@@ -65,6 +65,14 @@ def run(config: str, store: str = ".evalith",
     errors = sum(1 for r in result.results for s in r.scores if s.scorer == "error")
     suffix = f"  ({errors} errored)" if errors else ""
     typer.echo(f"Run {result.id} saved to {path} — {passed}/{total} checks passed{suffix}")
+    from .consensus import consensus_summary, threshold_from_config
+    cs = consensus_summary(result, threshold_from_config(result.config))
+    if cs:
+        k = cs["min_kappa"]
+        k_s = "n/a" if k != k else f"{k:+.2f}"   # NaN check
+        typer.echo(f"panel: {len(cs['judges'])} judges, "
+                   f"{len(cs['low_consensus_cases'])}/{cs['n_cases']} low-consensus cases, "
+                   f"min pairwise κ={k_s}")
     if fail_under is not None and (total == 0 or result.pass_rate < fail_under):
         detail = ("no checks ran" if total == 0
                   else f"pass rate {result.pass_rate:.2%} < threshold {fail_under:.2%}")
