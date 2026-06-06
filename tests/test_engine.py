@@ -176,3 +176,122 @@ def test_run_eval_fixed_samples_unchanged():
     run = run_eval(cfg, provider)
     for case in run.results:
         assert len(case.pass_rate_samples) == 3
+
+
+# ---------------------------------------------------------------------------
+# Judge consensus panel tests (v0.7)
+# ---------------------------------------------------------------------------
+
+PASS_JSON = '{"score": 1.0, "pass": true, "reason": "fine"}'
+FAIL_JSON = '{"score": 0.0, "pass": false, "reason": "harsh take"}'
+
+
+def _panel_cfg(tmp_path, samples=2, panel=None):
+    ds = tmp_path / "ds.yaml"
+    ds.write_text(
+        "name: d\ncases:\n"
+        "  - id: c1\n    input: hi\n    domain: code\n"
+        "  - id: c2\n    input: yo\n    metadata: {domain: math}\n",
+        encoding="utf-8",
+    )
+    return EvalConfig(
+        name="t", dataset=str(ds), model="fake", prompt_template="{{input}}",
+        samples=samples,
+        scorers=[ScorerConfig(type="llm_judge", params={
+            "criteria": "q",
+            "judge_model": f"echo:{PASS_JSON}",
+            "panel": panel if panel is not None else [f"echo:{FAIL_JSON}"],
+        })],
+    )
+
+
+def test_panel_samples_recorded_per_trial(tmp_path):
+    cfg = _panel_cfg(tmp_path, samples=2)
+    run = run_eval(cfg, FakeProvider(default="answer"))
+    cr = run.results[0]
+    assert cr.pass_rate_samples == [1.0, 1.0]              # primary still gates
+    assert cr.panel_samples[f"echo:{FAIL_JSON}"] == [0.0, 0.0]
+    assert cr.panel_details[f"echo:{FAIL_JSON}"] == "harsh take"
+    assert run.pass_rate == 1.0                            # panel never gates
+
+
+def test_domain_copied_from_case_with_metadata_fallback(tmp_path):
+    cfg = _panel_cfg(tmp_path)
+    run = run_eval(cfg, FakeProvider(default="answer"))
+    by_id = {r.case_id: r for r in run.results}
+    assert by_id["c1"].domain == "code"                    # top-level field
+    assert by_id["c2"].domain == "math"                    # metadata fallback
+
+
+def test_panel_judge_failure_recorded_as_missing(tmp_path):
+    import evalith.providers as providers_mod
+
+    class BoomProvider:
+        model = "boom"
+
+        def complete(self, prompt, *, system=None, temperature=0.0):
+            raise RuntimeError("down")
+
+    orig = providers_mod.get_provider
+
+    def fake_get_provider(model):
+        if model == "boom":
+            return BoomProvider()
+        return orig(model)
+
+    providers_mod.get_provider = fake_get_provider
+    try:
+        cfg = _panel_cfg(tmp_path, samples=2, panel=["boom"])
+        run = run_eval(cfg, FakeProvider(default="answer"))
+    finally:
+        providers_mod.get_provider = orig
+    cr = run.results[0]
+    assert cr.panel_samples["boom"] == [-1.0, -1.0]        # missing, not zero
+    assert cr.pass_rate_samples == [1.0, 1.0]              # primary unaffected
+
+
+def test_judge_cost_accumulated(tmp_path):
+    """Primary + panel judge usage lands in judge_tokens/judge_cost_usd."""
+    import evalith.providers as providers_mod
+    from evalith.providers.base import Response
+
+    class CostedJudge:
+        model = "costed"
+
+        def complete(self, prompt, *, system=None, temperature=0.0):
+            return Response(text=PASS_JSON, total_tokens=10, cost_usd=0.001)
+
+    orig = providers_mod.get_provider
+
+    def fake_get_provider(model):
+        if model == "costed":
+            return CostedJudge()
+        return orig(model)
+
+    providers_mod.get_provider = fake_get_provider
+    try:
+        ds = tmp_path / "ds.yaml"
+        ds.write_text("name: d\ncases:\n  - id: c1\n    input: hi\n", encoding="utf-8")
+        cfg = EvalConfig(name="t", dataset=str(ds), model="fake",
+                         prompt_template="{{input}}", samples=2,
+                         scorers=[ScorerConfig(type="llm_judge", params={
+                             "judge_model": "costed", "panel": []})])
+        run = run_eval(cfg, FakeProvider(default="answer"))
+    finally:
+        providers_mod.get_provider = orig
+    cr = run.results[0]
+    assert cr.judge_tokens == 20                # 2 trials × 10 tokens
+    assert abs(cr.judge_cost_usd - 0.002) < 1e-9
+    assert run.total_judge_tokens == 20
+
+
+def test_no_panel_runs_byte_identical_to_v06(tmp_path):
+    """Without panel config the new fields stay at defaults."""
+    ds = tmp_path / "ds.yaml"
+    ds.write_text("name: d\ncases:\n  - id: '1'\n    input: hello\n", encoding="utf-8")
+    cfg = EvalConfig(name="t", dataset=str(ds), model="fake", prompt_template="{{input}}",
+                     scorers=[ScorerConfig(type="contains", params={"text": "x"})])
+    run = run_eval(cfg, FakeProvider(default="y"))
+    cr = run.results[0]
+    assert cr.panel_samples == {} and cr.panel_details == {}
+    assert cr.judge_tokens == 0 and cr.judge_cost_usd == 0.0
