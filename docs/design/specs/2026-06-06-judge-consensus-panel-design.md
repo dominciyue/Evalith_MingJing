@@ -16,6 +16,8 @@ deepeval / openai-evals)都没有的差异化能力。
 
 顺带修一个现状 bug:CLI 跑 eval 时 `judge_provider` 从未传入,llm_judge 实际用
 被测模型自判自(`cli.py` → `run_eval(cfg, get_provider(cfg.model))`)。
+(实现注:为保持向后兼容,缺省行为不变——`judge_model` 未配置时仍回退到被测模型;
+该问题的修复方式是"可经 `judge_model` 配置显式指定",而非改变缺省。)
 
 ## 已确认的设计决策(与用户对齐)
 
