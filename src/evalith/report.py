@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from html import escape
 
+from .consensus import consensus_summary, domain_agreement, judge_means, threshold_from_config
 from .diff import DiffReport
 from .models import Run
 
@@ -16,15 +17,64 @@ def _md(s: str) -> str:
     return _truncate(s).replace("|", "\\|")
 
 
+_KAPPA_NOTE = ("*κ collapses toward 0 when one judge's labels are nearly constant "
+               "(expected-agreement inflation) — read it together with the means.*")
+
+
+def _fmt_kappa(v: float) -> str:
+    return "n/a" if v != v else f"{v:+.3f}"
+
+
+def _consensus_md(run: Run) -> list[str]:
+    """Markdown lines for the Judge Consensus section; [] when no panel ran."""
+    cs = consensus_summary(run, threshold_from_config(run.config))
+    if not cs:
+        return []
+    th = cs["threshold"]
+    judges = cs["judges"]
+    lines = ["", "## Judge Consensus", "",
+             f"- **Judges:** {', '.join(judges)}",
+             f"- **Low-consensus cases (spread ≥ {th:.2f}):** "
+             f"{len(cs['low_consensus_cases'])}/{cs['n_cases']}",
+             f"- **Judging cost:** ${run.total_judge_cost_usd:.4f}  ·  "
+             f"{run.total_judge_tokens} tokens",
+             "", "### Pairwise Cohen's κ", "",
+             "| judge A | judge B | κ |", "| --- | --- | --- |"]
+    lines += [f"| {_md(a)} | {_md(b)} | {_fmt_kappa(v)} |" for (a, b), v in cs["kappa"].items()]
+    lines += ["", _KAPPA_NOTE]
+    doms = domain_agreement(run, th)
+    if any(d != "?" for d in doms):
+        lines += ["", "### By domain", "",
+                  "| domain | n | " + " | ".join(_md(j) for j in judges) + " | low-consensus |",
+                  "| --- | --- | " + " | ".join("---" for _ in judges) + " | --- |"]
+        for dom, info in doms.items():
+            cells = " | ".join(f"{info['means'][j]:.2f}" if j in info["means"] else "n/a"
+                               for j in judges)
+            lines.append(f"| {_md(dom)} | {info['n']} | {cells} | {info['low_consensus']} |")
+    low_ids = set(cs["low_consensus_cases"])
+    low = [r for r in run.results if r.case_id in low_ids]
+    if low:
+        lines += ["", "### ⚠ Low-consensus cases", ""]
+        for r in low:
+            means = ", ".join(f"{j}={v:.2f}" for j, v in judge_means(r).items())
+            lines.append(f"- **{_md(r.case_id)}** ({means})")
+            lines += [f"  - {_md(j)}: {_md(reason)}"
+                      for j, reason in r.panel_details.items()]
+    return lines
+
+
 def run_to_markdown(run: Run) -> str:
+    cost_line = (f"- **Cost:** ${run.total_cost_usd:.4f}  ·  {run.total_tokens} tokens  ·  "
+                 f"{run.mean_latency_ms:.0f} ms/case avg")
+    if run.total_judge_cost_usd > 0:
+        cost_line += f"  ·  judging ${run.total_judge_cost_usd:.4f}"
     lines = [
         f"# Run {run.id} — {run.name}",
         "",
         f"- **Model:** {run.model}",
         f"- **Created:** {run.created_at:%Y-%m-%d %H:%M UTC}",
         f"- **Pass rate:** {run.pass_rate:.0%}  ({run.mean_score:.2f} mean score)",
-        f"- **Cost:** ${run.total_cost_usd:.4f}  ·  {run.total_tokens} tokens  ·  "
-        f"{run.mean_latency_ms:.0f} ms/case avg",
+        cost_line,
         "",
         "| case | output | scores | pass |",
         "| --- | --- | --- | --- |",
@@ -33,6 +83,7 @@ def run_to_markdown(run: Run) -> str:
         scores = ", ".join(f"{_md(s.scorer)}={s.value:.2f}" for s in r.scores)
         ok = "✅" if all(s.passed for s in r.scores) and r.scores else "❌"
         lines.append(f"| {_md(r.case_id)} | {_md(r.output)} | {scores} | {ok} |")
+    lines += _consensus_md(run)
     return "\n".join(lines) + "\n"
 
 
@@ -64,6 +115,11 @@ def run_to_html(run: Run) -> str:
             f"{run.mean_latency_ms:.0f} ms/case</p>"
             f"<table><tr><th>case</th><th>output</th><th>scores</th><th>pass</th></tr>"
             f"{rows}</table>")
+    cmd = _consensus_md(run)
+    if cmd:
+        items = "".join(f"<p>{escape(line)}</p>"
+                        for line in cmd if line and not line.startswith("|"))
+        body += f"<hr>{items}"
     return _HTML_SHELL.format(title=f"Run {escape(run.id)}", body=body)
 
 

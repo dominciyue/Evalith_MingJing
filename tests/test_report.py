@@ -151,3 +151,49 @@ def test_cli_report_html_to_file(tmp_path):
     assert res.exit_code == 0
     assert out.exists()
     assert "<table" in out.read_text(encoding="utf-8")
+
+
+def _panel_run():
+    s = Score(scorer="llm_judge", value=1.0, passed=True, detail="ok")
+    return Run(id="rid", name="panel-run",
+               created_at=datetime(2026, 6, 6, tzinfo=timezone.utc), model="m",
+               config={"scorers": [{"type": "llm_judge",
+                                    "params": {"consensus_threshold": 0.5}}]},
+               results=[
+                   CaseResult(case_id="agree", input="i", output="o", scores=[s],
+                              pass_rate_samples=[1.0, 1.0], domain="safety",
+                              panel_samples={"qw": [1.0, 1.0]},
+                              judge_tokens=10, judge_cost_usd=0.001),
+                   CaseResult(case_id="fight", input="i", output="o", scores=[s],
+                              pass_rate_samples=[1.0, 1.0], domain="code",
+                              panel_samples={"qw": [0.0, 0.0]},
+                              panel_details={"qw": "code does not compile"},
+                              judge_tokens=10, judge_cost_usd=0.001),
+               ])
+
+
+def test_markdown_has_consensus_section():
+    from evalith.report import run_to_markdown
+    md = run_to_markdown(_panel_run())
+    assert "## Judge Consensus" in md
+    assert "fight" in md                       # low-consensus case listed
+    assert "code does not compile" in md       # judge reason shown
+    assert "⚠" in md
+    assert "$0.0020" in md                     # judge cost split out
+
+
+def test_markdown_no_consensus_section_without_panel():
+    from evalith.report import run_to_markdown
+    run = _panel_run()
+    for r in run.results:
+        r.panel_samples = {}
+        r.panel_details = {}
+    md = run_to_markdown(run)
+    assert "Judge Consensus" not in md
+
+
+def test_html_has_consensus_section():
+    from evalith.report import run_to_html
+    html = run_to_html(_panel_run())
+    assert "Judge Consensus" in html
+    assert "code does not compile" in html
