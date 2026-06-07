@@ -152,6 +152,14 @@ API key。`llm_judge` 评分器可用 `params: {language: zh}` 进行中文评�
 延迟的 JSON 快照)保存到 `.evalith/runs/`。`diff` 逐条比较两次保存的 Run,把每条
 用例标记为**改进 / 回退 / 不变 / 新增 / 移除**。
 
+## v0.8 新功能
+
+- **硬指标 scorer** —— 在 judge 最易分歧处给确定性、非 LLM 判分:
+  - `code_exec` 把模型代码放进受限子进程(资源限制 + 危险调用拦截)跑 HumanEval
+    式单测;需 `EVALITH_ALLOW_CODE_EXEC=1` 显式开启。
+  - `numeric_match` 用 `rel_tol` / `abs_tol` 容差比对输出里的数值与 `expected`。
+- 与 v0.7 共识面板形成闭环:面板*检测*分歧,`code_exec` 给出代码的*ground truth*。
+
 ## v0.7 新功能
 
 - **多 judge 共识面板** —— 一次 eval 挂多个 judge:per-case 分歧、pairwise Cohen's κ、分领域一致性、⚠ 低共识标记。主 judge 照常 gate,panel 只诊断不拦截 CI。

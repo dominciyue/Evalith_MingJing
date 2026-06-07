@@ -153,6 +153,16 @@ every case's output, scores, tokens, cost, and latency — to `.evalith/runs/`.
 `diff` compares two saved runs case-by-case and labels each **improved / regressed
 / unchanged / new / removed**.
 
+## What's new in v0.8
+
+- **Hard-metric scorers** — deterministic, non-LLM grading where judges disagree most:
+  - `code_exec` runs the model's code against HumanEval-style unit tests in a
+    locked-down subprocess (resource limits + dangerous-call guard); opt in with
+    `EVALITH_ALLOW_CODE_EXEC=1`.
+  - `numeric_match` compares an extracted number to `expected` with `rel_tol` / `abs_tol`.
+- Closes the loop on v0.7's consensus panel: the panel *detects* judge
+  disagreement, `code_exec` gives the *ground truth* for code.
+
 ## What's new in v0.7
 
 - **Judge consensus panel** — attach extra judges to one eval; get per-case disagreement, pairwise Cohen's κ, per-domain agreement and ⚠ low-consensus flags. Primary judge still gates; the panel never blocks CI.

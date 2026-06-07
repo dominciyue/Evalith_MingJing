@@ -1,0 +1,14 @@
+# Deterministic code grading via unit-test execution (HumanEval-style).
+# Executes untrusted model code in a locked-down subprocess — opt in with
+# EVALITH_ALLOW_CODE_EXEC=1.
+name: code-exec-demo
+dataset: examples/code.humaneval.yaml
+model: deepseek-chat
+prompt_template: "{{input}}"
+temperature: 0.0
+samples: 1
+scorers:
+  - type: code_exec
+    params:
+      timeout: 5
+      memory_mb: 256
