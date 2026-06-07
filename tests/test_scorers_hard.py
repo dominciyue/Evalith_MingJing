@@ -59,3 +59,37 @@ def test_code_exec_no_code_in_output():
     score = CodeExec().score(case, "   ")
     assert score.passed is False
     assert "no code" in score.detail
+
+
+from evalith.scorers.hard import NumericMatch
+
+
+def _ncase(expected):
+    return TestCase(id="n1", input="compute", expected=expected)
+
+
+def test_numeric_exact():
+    s = NumericMatch().score(_ncase("42"), "the answer is 42")
+    assert s.passed is True
+
+
+def test_numeric_within_tol():
+    s = NumericMatch(rel_tol=1e-3).score(_ncase("3.14159"), "result is 3.1416")
+    assert s.passed is True
+
+
+def test_numeric_outside_tol():
+    s = NumericMatch(rel_tol=1e-3).score(_ncase("3.14159"), "about 3.0")
+    assert s.passed is False
+
+
+def test_numeric_no_number():
+    s = NumericMatch().score(_ncase("42"), "no digits here")
+    assert s.passed is False
+    assert "no number" in s.detail
+
+
+def test_numeric_expected_not_numeric():
+    s = NumericMatch().score(_ncase("cat"), "42")
+    assert s.passed is False
+    assert "not numeric" in s.detail
