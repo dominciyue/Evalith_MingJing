@@ -183,6 +183,7 @@ v0.4 —— 单轮 prompt 评测、基于文件的运行存储、带逐用例输
 - **技术深度文(中文):** [AI 回归测试需要统计显著性: 用 bootstrap CI 抗 LLM 噪声](https://zhuanlan.zhihu.com/p/2043351926964848178) —— 为什么点对点比较的 eval CI gate 在统计上就是错的、Evalith `--samples N` 背后的数学,以及一组可复现的 DeepSeek A/B 实验。
 - **续篇(中文):** [续:LLM 当 judge 自己也在抖](https://zhuanlan.zhihu.com/p/2044542154400322098) —— bootstrap CI 抗噪与三个 OSS eval 工具的同台对照。源文件 + 原始数据见 [`docs/blog/article2/`](docs/blog/article2/)。
 - **第三篇(中文):** [续之续:更严的统计方法 + 第三方 judge,article 2 的结论变了吗?](https://zhuanlan.zhihu.com/p/2044820946721231928) —— 把 BCa、paired bootstrap、BH FDR 加进 Evalith,在 article 2 同一份 frozen raw 数据上跑双路 qwen-plus cross-judge 实验。v0.5 release。源文件 + 原始数据见 [`docs/blog/article3/`](docs/blog/article3/)。
+- **第四篇(中文):** [续之续之续:换三个 judge、三个模型、五个领域,judge 的分歧到底藏在哪?](https://zhuanlan.zhihu.com/p/2046436508459070253) —— 30 case × 5 领域 × 3 judge × 3 model,揭示 judge 分歧的*领域结构*(code 分歧最大、safety/概念解释是共识区)。已在 v0.7 的 judge 共识面板中产品化。源文件 + 原始数据见 [`docs/blog/article4/`](docs/blog/article4/)。
 - **设计文档与 TDD 计划:** [`docs/`](docs/) —— v0.1 spec、v0.1/v0.2 任务级 plan,以及博客原文。
 
 ## 许可证
