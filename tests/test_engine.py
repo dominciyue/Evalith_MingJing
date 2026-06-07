@@ -334,3 +334,30 @@ def test_primary_failure_keeps_panel_trials_aligned(tmp_path):
     assert len(cr.panel_samples[key]) == 3                  # aligned!
     assert cr.panel_samples[key][0] == MISSING              # errored trial -> MISSING
     assert cr.panel_samples[key][1:] == [0.0, 0.0]          # later trials judged normally
+
+
+def test_code_exec_end_to_end(tmp_path, monkeypatch):
+    monkeypatch.setenv("EVALITH_ALLOW_CODE_EXEC", "1")
+    from evalith.config import EvalConfig, ScorerConfig
+    from evalith.engine import run_eval
+    from evalith.providers.base import EchoProvider
+
+    ds = tmp_path / "ds.yaml"
+    ds.write_text(
+        "name: d\n"
+        "cases:\n"
+        "  - id: add\n"
+        "    input: write add\n"
+        "    metadata:\n"
+        "      entry_point: add\n"
+        "      test: |\n"
+        "        def check(candidate):\n"
+        "            assert candidate(2, 3) == 5\n",
+        encoding="utf-8",
+    )
+    cfg = EvalConfig(
+        name="e2e", dataset=str(ds), model="echo", prompt_template="{{input}}",
+        scorers=[ScorerConfig(type="code_exec", params={})],
+    )
+    run = run_eval(cfg, EchoProvider(fixed="def add(a, b): return a + b"))
+    assert run.results[0].scores[0].passed is True
