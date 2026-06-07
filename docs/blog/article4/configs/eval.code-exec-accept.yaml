@@ -1,0 +1,16 @@
+# v0.8 acceptance: execution ground truth on article-4's HumanEval problems.
+# Run (executes untrusted model code — opt in):
+#   EVALITH_ALLOW_CODE_EXEC=1 DEEPSEEK_API_KEY=... \
+#     evalith run docs/blog/article4/configs/eval.code-exec-accept.yaml
+name: code-exec-accept-v08
+dataset: examples/code.humaneval.yaml
+model: deepseek-chat
+prompt_template: "{{input}}"
+temperature: 0.0
+samples: 1
+concurrency: 4
+scorers:
+  - type: code_exec
+    params:
+      timeout: 5
+      memory_mb: 256
