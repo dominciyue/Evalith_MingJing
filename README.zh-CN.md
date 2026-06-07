@@ -145,6 +145,8 @@ API key。`llm_judge` 评分器可用 `params: {language: zh}` 进行中文评�
 | `contains`    | 输出包含 `params.text`(或用例的 `expected`) |
 | `regex`       | 输出匹配 `params.pattern` |
 | `llm_judge`   | 由 LLM 依据 `params.criteria` 打分(`params.language: en\|zh`) |
+| `code_exec`   | 模型代码通过用例的 HumanEval 式单测(`metadata.test` + `entry_point`);在受限子进程内执行,需 `EVALITH_ALLOW_CODE_EXEC=1` 开启 |
+| `numeric_match` | 从输出抽取的数值在 `params.rel_tol` / `abs_tol` 容差内匹配 `expected` |
 
 ## 工作原理
 

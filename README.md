@@ -145,6 +145,8 @@ then set that provider's API key. The `llm_judge` scorer can grade in Chinese wi
 | `contains`    | output contains `params.text` (or the case's `expected`) |
 | `regex`       | output matches `params.pattern` |
 | `llm_judge`   | an LLM grades the output against `params.criteria` (`params.language: en\|zh`) |
+| `code_exec`   | the model's code passes the case's HumanEval-style unit tests (`metadata.test` + `entry_point`); runs in a locked-down subprocess, opt in with `EVALITH_ALLOW_CODE_EXEC=1` |
+| `numeric_match` | a number extracted from the output matches `expected` within `params.rel_tol` / `abs_tol` |
 
 ## How it works
 
