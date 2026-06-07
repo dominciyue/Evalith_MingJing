@@ -1,3 +1,5 @@
+import pytest
+
 from evalith.config import ScorerConfig
 from evalith.models import TestCase
 from evalith.scorers.rules import Contains, ExactMatch, Regex, build_scorer
@@ -65,3 +67,22 @@ def test_build_llm_judge_defaults_unchanged():
     judge = build_scorer(cfg, judge_provider=fp)
     assert judge.provider is fp                           # falls back, v0.6 behavior
     assert judge.panel == {}
+
+
+def test_code_exec_gate_blocks_without_env(monkeypatch):
+    monkeypatch.delenv("EVALITH_ALLOW_CODE_EXEC", raising=False)
+    with pytest.raises(ValueError, match="EVALITH_ALLOW_CODE_EXEC"):
+        build_scorer(ScorerConfig(type="code_exec", params={}))
+
+
+def test_code_exec_builds_with_env(monkeypatch):
+    monkeypatch.setenv("EVALITH_ALLOW_CODE_EXEC", "1")
+    scorer = build_scorer(ScorerConfig(type="code_exec", params={"timeout": 3}))
+    assert scorer.name == "code_exec"
+    assert scorer.timeout == 3
+
+
+def test_numeric_match_builds():
+    scorer = build_scorer(ScorerConfig(type="numeric_match", params={"rel_tol": 1e-2}))
+    assert scorer.name == "numeric_match"
+    assert scorer.rel_tol == 1e-2

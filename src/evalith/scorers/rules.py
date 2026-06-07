@@ -62,4 +62,20 @@ def build_scorer(cfg: ScorerConfig, judge_provider=None) -> Scorer:
                         criteria=cfg.params.get("criteria", ""),
                         language=cfg.params.get("language", "en"),
                         panel=panel)
+    if cfg.type == "code_exec":
+        import os
+
+        from .hard import CodeExec
+
+        if os.environ.get("EVALITH_ALLOW_CODE_EXEC") != "1":
+            raise ValueError(
+                "code_exec runs untrusted model code; "
+                "set EVALITH_ALLOW_CODE_EXEC=1 to enable")
+        return CodeExec(timeout=cfg.params.get("timeout", 5),
+                        memory_mb=cfg.params.get("memory_mb", 256))
+    if cfg.type == "numeric_match":
+        from .hard import NumericMatch
+
+        return NumericMatch(rel_tol=cfg.params.get("rel_tol", 1e-3),
+                            abs_tol=cfg.params.get("abs_tol", 0.0))
     raise ValueError(f"Unknown scorer type: {cfg.type}")
