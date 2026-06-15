@@ -30,7 +30,7 @@ Repository = "https://github.com/dominciyue/Evalith_MingJing"
 Issues = "https://github.com/dominciyue/Evalith_MingJing/issues"
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "scipy>=1.11"]
+dev = ["pytest>=8.0", "scipy>=1.11", "datasets>=2.18"]
 litellm = ["litellm>=1.40"]
 
 [project.scripts]
