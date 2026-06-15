@@ -2,4 +2,4 @@ import evalith
 
 
 def test_version():
-    assert evalith.__version__ == "0.1.0"
+    assert evalith.__version__ == "0.8.0"
